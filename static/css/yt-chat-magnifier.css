@@ -1,0 +1,101 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0 auto;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    max-width: 1200px;
+}
+
+.row, .col-12, .card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.card {
+    border-width: 0;
+}
+
+.card-header {
+    margin-top: .5em;
+}
+
+.card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#messages-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.message-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    max-height: calc(100vh - 200px);
+    border-width: 4px;
+}
+
+#message-list li {
+    font-size: 1.5em;
+}
+
+#message-list li:nth-child(even) {
+    background-color: white;
+}
+
+#message-list li:nth-child(odd) {
+    background-color:lightgray;
+}
+
+#message-list .btn {
+    font-size: 1.5em;
+    background-color: blanchedalmond;
+}
+
+.connect-btn {
+    background-color: green;
+    border-color: green;
+}
+
+.disconnect-btn {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Ensures that the connection and disconnection buttons remain always visible */
+.connect-btn:hover,
+.disconnect-btn:hover {
+    color: white !important; /* Forces the text color to remain white */
+    opacity: 1 !important; /* Keeps opacity at maximum */
+    visibility: visible !important; /* Ensures it remains visible */
+}
+
+#connect-btn:hover {
+    background-color:#28a745 !important;
+}
+
+#disconnect-btn:hover {
+    background-color: orangered !important;
+}

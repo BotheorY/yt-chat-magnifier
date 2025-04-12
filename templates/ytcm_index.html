@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Chat Magnifier</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/css/yt-chat-magnifier.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="mb-0">YouTube Chat Magnifier</h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="connection-controls" class="mb-4 text-center">
+                            {% if connected %}
+                                <button id="disconnect-btn" class="btn btn-lg disconnect-btn text-white">DISCONNECT FROM YOUTUBE</button>
+                            {% else %}
+                                <button id="connect-btn" class="btn btn-lg connect-btn text-white">CONNECT TO YOUTUBE</button>
+                            {% endif %}
+                        </div>
+                        
+                        <div id="messages-container" class="{% if not connected %}d-none{% endif %}">
+                            <h3>Chat Messages</h3>
+                            <div class="message-list p-3 border rounded">
+                                <ul id="message-list" class="list-group list-group-flush">
+                                    <!-- Messages will be added here dynamically -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Reference to external JavaScript file -->    
+    <script>
+        // Pass variables from server to JavaScript
+        var pollingIntervalMs = {{ polling_interval }};
+        var isConnected = {% if connected %}true{% else %}false{% endif %};
+    </script>
+    <script src="/static/js/yt-chat-magnifier.js"></script>
+</body>
+</html>
