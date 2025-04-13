@@ -78,7 +78,8 @@ def ytcm_load_config(config_file):
 @app.route('/')
 def ytcm_index():
     ytcm_connect(True)
-    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS)
+    live_title = ytcm_youtube_chat_reader.get_live_title() if ytcm_youtube_chat_reader else '...'
+    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title)
 
 @app.route('/ytcm_connect', methods=['POST'])
 def ytcm_connect(resume_only=False):

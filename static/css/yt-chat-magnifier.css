@@ -22,10 +22,27 @@ body {
     max-width: 1200px;
 }
 
-.row, .col-12, .card {
+.col-12, .card {
     display: flex;
     flex-direction: column;
     flex: 1;
+}
+
+.row {
+    display: flex;
+    flex: 1;
+}
+
+.card-body .row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+}
+
+.card-body {
+   padding-left: 0px !important;
+   padding-right: 0px !important;
 }
 
 .card {
@@ -33,7 +50,7 @@ body {
 }
 
 .card-header {
-    margin-top: .5em;
+    margin-top: .65em;
 }
 
 .card-body {
@@ -66,7 +83,7 @@ body {
 }
 
 #message-list li:nth-child(odd) {
-    background-color:lightgray;
+    background-color:rgb(240, 240, 240);
 }
 
 #message-list .btn {
@@ -98,4 +115,50 @@ body {
 
 #disconnect-btn:hover {
     background-color: orangered !important;
+}
+
+.scroll-button {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    border-color: black;
+    border-width: 4px;
+    color: white;
+    opacity: 1 !important;
+    visibility: visible !important;
+    border-radius: 4px;
+    font-size: 1.5em;
+    font-weight: 500;
+    height: 100%;
+}
+
+.scroll-button:hover {
+    border-color: black;
+    border-width: 4px;
+}
+
+.scroll-down-button {
+    background-color: #007bff;
+}
+
+.scroll-down-button:hover {
+    background-color: #3596ff !important;
+}
+
+.scroll-up-button {
+    background-color: green;
+}
+
+.scroll-up-button:hover {
+    background-color: #28a745 !important;
+}
+
+#scroll-commands {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 0rem; /* Allinea con l'inizio della lista messaggi */
+    padding-right: 0px;
+    padding-left: .5em;
 }

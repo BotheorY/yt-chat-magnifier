@@ -35,8 +35,8 @@ class OpenAIService:
                     {"role": "system", "content": "You are an assistant that analyzes messages to determine if they are questions. Answer only with 'YES' or 'NO'."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=10,
-                temperature=0.1
+                max_tokens=200,
+                temperature=1
             )
             
             # Extract the response
@@ -95,8 +95,8 @@ class OpenAIService:
                     {"role": "system", "content": "You are an assistant that analyzes usernames to determine if they likely belong to male users. Answer only with 'YES' or 'NO'."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=10,
-                temperature=0.1
+                max_tokens=100,
+                temperature=1.5
             )
             
             # Extract the response

@@ -7,6 +7,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.auth.exceptions import RefreshError
 from ytcm_consts import *
+import json
 
 logger = logging.getLogger('chat_magnifier')
 
@@ -191,5 +192,45 @@ class YouTubeChatReader:
         logger.info("Disconnected from YouTube")
         return True
 
-# Add the missing json import
-import json
+    def get_live_title(self):
+        """Gets the title of the current live stream"""
+
+        if not self.connected:
+            logger.error("Not connected to YouTube")
+            return '...'
+
+        try:
+            # Get the list of active live broadcasts
+            request = self.youtube.liveBroadcasts().list(
+                part="snippet",
+                broadcastStatus="active",
+                maxResults=1
+            )
+            response = request.execute()
+
+            # Get the title from the first active broadcast
+            items = response.get('items', [])
+            if items:
+                return items[0]['snippet']['title']
+
+            # If not found in broadcasts, try livestreams
+            request = self.youtube.liveStreams().list(
+                part="snippet",
+                mine=True,
+                maxResults=1
+            )
+            response = request.execute()
+
+            items = response.get('items', [])
+            if items:
+                if items[0]['snippet']['isDefaultStream']:
+                    return items[0]['snippet']['title']
+
+            return '...'
+
+        except HttpError as e:
+            logger.error(f"HTTP error while retrieving live title: {str(e)}")
+            return '...'
+        except Exception as e:
+            logger.error(f"Error while retrieving live title: {str(e)}")
+            return '...'

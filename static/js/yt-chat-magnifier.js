@@ -1,4 +1,39 @@
+let lastNMessages = 0;
+
 $(document).ready(function() {
+
+    $('#scroll-bottom-btn').click(function() {
+        
+        // Automatically scroll to bottom
+        const messageContainer = $('.message-list');
+        messageContainer.scrollTop(messageContainer[0].scrollHeight);
+
+    });
+
+    $('#scroll-top-btn').click(function() {
+        
+        // Automatically scroll to top
+        const messageContainer = $('.message-list');
+        messageContainer.scrollTop(0);
+
+    });
+
+    $('#scroll-up-btn').click(function() {
+        
+        // Automatically scroll up
+        const messageContainer = $('.message-list');
+        messageContainer.scrollTop(messageContainer.scrollTop() - 50);
+
+    });
+
+    $('#scroll-down-btn').click(function() {
+        
+        // Automatically scroll down
+        const messageContainer = $('.message-list');
+        messageContainer.scrollTop(messageContainer.scrollTop() + 50);
+
+    });
+
     // Connection management
     $('#connect-btn').click(function() {
         $.ajax({
@@ -143,9 +178,14 @@ $(document).ready(function() {
 
         });
         
-        // Automatically scroll to bottom
-        const messageContainer = $('.message-list');
-        messageContainer.scrollTop(messageContainer[0].scrollHeight);
+        let nMessages = messageList.children().length;
+            if (lastNMessages < nMessages) {
+            // Automatically scroll to bottom
+            const messageContainer = $('.message-list');
+            messageContainer.scrollTop(messageContainer[0].scrollHeight);
+        }
+        lastNMessages = nMessages;
+
     }
     
     // Function to toggle message visibility
@@ -177,3 +217,4 @@ $(document).ready(function() {
         startMessagePolling();
     }
 });
+
