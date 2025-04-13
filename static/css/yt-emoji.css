@@ -1,0 +1,30 @@
+.yt-emoji {
+    display: inline-block;
+    font-size: 1.2em; /* Dimensione leggermente più grande rispetto al testo normale */
+    line-height: 1;
+    vertical-align: middle;
+    margin: 0 2px;
+    transition: transform 0.2s ease;
+}
+
+/* Effetto hover opzionale per le emoticon */
+.yt-emoji:hover {
+    transform: scale(1.5);
+}
+
+/* Stile per emoticon specifiche, se necessario */
+.yt-emoji-large {
+    font-size: 1.5em;
+}
+
+/* Supporto per emoticon personalizzate con immagini */
+.yt-emoji-img {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    vertical-align: middle;
+    margin: 0 2px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}

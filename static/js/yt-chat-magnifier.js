@@ -154,9 +154,10 @@ $(document).ready(function() {
                 
                 // Create message text container
                 const messageText = $('<div></div>');
-                // Uso HTML per mettere in grassetto il nome dell'autore
-                messageText.html(`[<strong>${msg.author}</strong>] - ${msg.text}`);
-                // Nota: cambiato .text() in .html() per supportare i tag HTML
+                // Uso HTML per mettere in grassetto il nome dell'autore e parsare le emoticon
+                const parsedText = parseYouTubeEmojisToHTML(msg.text);
+                messageText.html(`[<strong>${msg.author}</strong>] - ${parsedText}`);
+                // Nota: cambiato .text() in .html() per supportare i tag HTML e le emoticon
                 
                 // Create toggle button
                 const toggleBtn = $('<button class="btn btn-sm ms-2"></button>');

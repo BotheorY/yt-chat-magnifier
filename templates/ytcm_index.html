@@ -10,6 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="/static/css/yt-chat-magnifier.css" rel="stylesheet">
+    <link href="/static/css/yt-emoji.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -82,6 +83,7 @@
         var pollingIntervalMs = {{ polling_interval }};
         var isConnected = {% if connected %}true{% else %}false{% endif %};
     </script>
+    <script src="/static/js/yt-emoji-parser.js"></script>
     <script src="/static/js/yt-chat-magnifier.js"></script>
 </body>
 </html>
