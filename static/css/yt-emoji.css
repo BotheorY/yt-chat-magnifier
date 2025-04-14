@@ -9,7 +9,7 @@
 
 /* Effetto hover opzionale per le emoticon */
 .yt-emoji:hover {
-    transform: scale(1.5);
+    transform: scale(2);
 }
 
 /* Stile per emoticon specifiche, se necessario */

@@ -1,6 +1,7 @@
 import logging
 import openai
-#from openai import OpenAI as oai
+import re
+from ytcm_consts import *
 
 logger = logging.getLogger('chat_magnifier')
 
@@ -8,7 +9,7 @@ class OpenAIService:
     def __init__(self, api_key):
         self.api_key = api_key
         openai.api_key = api_key
-        self.model = "chatgpt-4o-latest"
+        self.model = YTCM_GPT_MODEL
     
     def is_question(self, text):
 
@@ -42,31 +43,33 @@ class OpenAIService:
             # Extract the response
             answer = response.choices[0].message.content.strip().upper()
             
-            logger.info(f"OpenAI has determined that the message '{text}' is a question: {answer == 'YES'}")
+            if YTCM_TRACE_MODE:
+                logger.info(f"OpenAI has determined that the message '{text}' is a question: {answer == 'YES'}")
             
             return answer == 'YES'
         
         except Exception as e:
-            logger.error(f"Error during message analysis with OpenAI: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error during message analysis with OpenAI: {str(e)}")
             # In case of error, we assume it's not a question
             return False
 
     def is_appropriate(self, text):
         try:
-#            client = oai(api_key = self.api_key)
             response = openai.moderations.create(
                 input=text,
                 model="omni-moderation-latest"
             )
             results = response.results[0]
             is_inappropriate = results.flagged
-#            categories = results.categories.model_dump()
-#            categories = {k: v for k, v in categories.items() if v}
-#            categories = list(categories.keys())
-            logger.info(f"OpenAI has determined that the message '{text}' is appropriate: {not is_inappropriate}")
+
+            if YTCM_TRACE_MODE:
+                logger.info(f"OpenAI has determined that the message '{text}' is appropriate: {not is_inappropriate}")
+
             return not is_inappropriate
         except Exception as e:
-            logger.error(f"Error during message moderation with OpenAI: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error during message moderation with OpenAI: {str(e)}")
             return True
 
     def is_male_username(self, username):
@@ -102,11 +105,78 @@ class OpenAIService:
             # Extract the response
             answer = response.choices[0].message.content.strip().upper()
             
-            logger.info(f"OpenAI has determined that the username '{username}' belongs to a male user: {answer == 'YES'}")
+            if YTCM_TRACE_MODE:
+                logger.info(f"OpenAI has determined that the username '{username}' belongs to a male user: {answer == 'YES'}")
             
             return answer == 'YES'
         
         except Exception as e:
-            logger.error(f"Error during username gender analysis with OpenAI: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error during username gender analysis with OpenAI: {str(e)}")
             # In case of error, we return False
             return False
+            
+    def correct_text(self, text):
+        """
+        Corrects spelling and improves the form of a text while preserving YouTube emoticons
+        
+        Args:
+            text (str): The text to correct
+            
+        Returns:
+            str: The corrected text with preserved emoticons
+        """
+        try:
+            if not text:
+                return text
+                
+            # Identify YouTube emoticons using regex pattern
+            emoticon_pattern = r':([-a-z]+):'
+            emoticons = re.findall(emoticon_pattern, text)
+            
+            # Replace emoticons with placeholders to protect them
+            protected_text = text
+            placeholder_map = {}
+            
+            for i, emoticon in enumerate(emoticons):
+                emoticon_code = f':{emoticon}:'
+                placeholder = f'__EMOTICON_{i}__'
+                protected_text = protected_text.replace(emoticon_code, placeholder)
+                placeholder_map[placeholder] = emoticon_code
+            
+            # Prepare the prompt for the API
+            prompt = f"""Correct the spelling and improve the form of the following text. 
+            Maintain the original meaning and tone. Do not add or remove information.
+            Do not modify any placeholders in the format __EMOTICON_X__.
+            
+            Text: {protected_text}
+            """
+            
+            # Call to OpenAI API
+            response = openai.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are an assistant that corrects spelling and improves text form while preserving special placeholders."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=1000,
+                temperature=0.3
+            )
+            
+            # Extract the corrected text
+            corrected_text = response.choices[0].message.content.strip()
+            
+            # Restore emoticons from placeholders
+            for placeholder, emoticon_code in placeholder_map.items():
+                corrected_text = corrected_text.replace(placeholder, emoticon_code)
+            
+            if YTCM_TRACE_MODE:
+                logger.info(f"OpenAI has corrected the text: '{text}' to '{corrected_text}'")
+            
+            return corrected_text
+        
+        except Exception as e:
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error during text correction with OpenAI: {str(e)}")
+            # In case of error, return the original text
+            return text

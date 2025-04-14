@@ -30,10 +30,11 @@ class YouTubeChatReader:
             # Authentication with OAuth 2.0
             credentials, resumed = self._get_credentials(resume_only)
             if not credentials:
-                if resume_only:
-                    logger.info("Failed to authenticate cause no credentials from file")
-                else:
-                    logger.error("Failed to authenticate with OAuth 2.0")
+                if YTCM_DEBUG_MODE:
+                    if resume_only:
+                        logger.error("Failed to authenticate cause no credentials from file")
+                    else:
+                        logger.error("Failed to authenticate with OAuth 2.0")
                 return False
             
             # Create YouTube service
@@ -43,10 +44,12 @@ class YouTubeChatReader:
             return 'resumed' if resumed else True
         
         except HttpError as e:
-            logger.error(f"HTTP error during YouTube connection: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"HTTP error during YouTube connection: {str(e)}")
             return False
         except Exception as e:
-            logger.error(f"Error during YouTube connection: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error during YouTube connection: {str(e)}")
             return False
     
     def _get_credentials(self, resume_only=False):
@@ -60,7 +63,8 @@ class YouTubeChatReader:
                 credentials = Credentials.from_authorized_user_info(
                     json.loads(open(self.token_file).read()), self.scopes)
             except Exception as e:
-                logger.error(f"Error loading token: {str(e)}")
+                if YTCM_DEBUG_MODE:
+                    logger.error(f"Error loading token: {str(e)}")
         
         # If there are no valid credentials, run the authentication flow
         if (not credentials) or (not credentials.valid):
@@ -68,7 +72,8 @@ class YouTubeChatReader:
                 try:
                     credentials.refresh(Request())
                 except RefreshError as e:
-                    logger.error(f"Error refreshing token: {str(e)}")
+                    if YTCM_DEBUG_MODE:
+                        logger.error(f"Error refreshing token: {str(e)}")
                     credentials = None
             
             if (not resume_only) and (not credentials):
@@ -124,26 +129,28 @@ class YouTubeChatReader:
             return None
         
         except HttpError as e:
-            logger.error(f"HTTP error while retrieving live chat ID: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"HTTP error while retrieving live chat ID: {str(e)}")
             return None
         except Exception as e:
-            logger.error(f"Error while retrieving live chat ID: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error while retrieving live chat ID: {str(e)}")
             return None
     
     def get_new_messages(self):
         """Gets new messages from the live chat"""
 
         if not self.connected:
-            logger.error("Not connected to YouTube")
+            if YTCM_DEBUG_MODE:
+                logger.error("Not connected to YouTube")
             return []
 
-#        if not self.live_chat_id:            
-        if True:            
-            # Get the live chat ID
-            self.live_chat_id = self._get_live_chat_id()            
-            if not self.live_chat_id:
+        # Get the live chat ID
+        self.live_chat_id = self._get_live_chat_id()            
+        if not self.live_chat_id:
+            if YTCM_DEBUG_MODE:
                 logger.error("No live stream found on the channel")
-                return False
+            return False
         
         try:
             # Request chat messages
@@ -170,10 +177,12 @@ class YouTubeChatReader:
             return messages
         
         except HttpError as e:
-            logger.error(f"HTTP error during message retrieval: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"HTTP error during message retrieval: {str(e)}")
             return []
         except Exception as e:
-            logger.error(f"Error during message retrieval: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error during message retrieval: {str(e)}")
             return []
     
     def disconnect(self):
@@ -186,17 +195,22 @@ class YouTubeChatReader:
         if os.path.exists(self.token_file):
             try:
                 os.remove(self.token_file)
-                logger.info(f"Removed token file: {self.token_file}")
+                if YTCM_TRACE_MODE:
+                    logger.info(f"Removed token file: {self.token_file}")
             except Exception as e:
-                logger.error(f"Error removing token file: {str(e)}")
-        logger.info("Disconnected from YouTube")
+                if YTCM_DEBUG_MODE:
+                    logger.error(f"Error removing token file: {str(e)}")
+
+        if YTCM_TRACE_MODE:
+            logger.info("Disconnected from YouTube")
         return True
 
     def get_live_title(self):
         """Gets the title of the current live stream"""
 
         if not self.connected:
-            logger.error("Not connected to YouTube")
+            if YTCM_DEBUG_MODE:
+                logger.error("Not connected to YouTube")
             return '...'
 
         try:
@@ -229,8 +243,10 @@ class YouTubeChatReader:
             return '...'
 
         except HttpError as e:
-            logger.error(f"HTTP error while retrieving live title: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"HTTP error while retrieving live title: {str(e)}")
             return '...'
         except Exception as e:
-            logger.error(f"Error while retrieving live title: {str(e)}")
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error while retrieving live title: {str(e)}")
             return '...'

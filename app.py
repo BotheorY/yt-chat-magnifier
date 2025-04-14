@@ -13,6 +13,8 @@ from ytcm_consts import *
 
 app = Flask(__name__)
 
+ytcm_ai_needed = YTCM_APPLY_MODERATION or YTCM_QUESTIONS_ONLY or YTCM_RETRIEVE_MSG_AUTHOR_GENDER or YTCM_APPLY_SPELLING_CORRECTION
+
 # Logger configuration
 def setup_logger():
     if not os.path.exists('logs'):
@@ -57,12 +59,14 @@ ytcm_chat_messages = []
 
 # Service instances
 ytcm_youtube_chat_reader = None
-ytcm_openai_service = None
+ytcm_openai_service = not ytcm_ai_needed
 
 def ytcm_find_message(message: ytcm_ChatMessageCustom) -> bool:
-    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_chat_messages
+    global ytcm_chat_messages
     for msg in ytcm_chat_messages:
         if str(msg) == str(message):
+            if YTCM_TRACE_MODE:
+                logger.info(f"Message found in the list: {msg}")
             return True
     return False
 
@@ -91,12 +95,14 @@ def ytcm_connect(resume_only=False):
         google_config['redirect_uri'] = request.url_root + 'ytcm_oauth2callback'
         openai_config = ytcm_load_config(YTCM_OPENAI_CONFIG_FILE)
         
-        if not google_config or not openai_config:
+        if not google_config or (ytcm_ai_needed and (not openai_config)):
             return jsonify({'success': False, 'error': 'Error loading configurations'})
         
         # Service initialization
         ytcm_youtube_chat_reader = YouTubeChatReader(google_config)
-        ytcm_openai_service = OpenAIService(openai_config['api_key'])
+
+        if ytcm_ai_needed:
+            ytcm_openai_service = OpenAIService(openai_config['api_key'])
         
         # Connection to YouTube
         success = ytcm_youtube_chat_reader.connect(resume_only)
@@ -141,7 +147,7 @@ def ytcm_disconnect():
             ytcm_youtube_chat_reader = None
         
         if ytcm_openai_service:
-            ytcm_openai_service = None
+            ytcm_openai_service = not ytcm_ai_needed
         
         # Clear messages
         ytcm_chat_messages = []
@@ -218,12 +224,15 @@ def ytcm_get_messages():
                     logger.info(f"New message received: {msg['author']} - {msg['text']}")
                 
                 # Verify if the message is a question via OpenAI
-                is_question = ytcm_openai_service.is_question(msg['text'])
+                is_question = (not YTCM_QUESTIONS_ONLY) or ytcm_openai_service.is_question(msg['text'])
                 
                 if is_question and ((not YTCM_APPLY_MODERATION) or ytcm_openai_service.is_appropriate(msg['text'])):
+                    msg_text = msg['text']
+                    if YTCM_APPLY_SPELLING_CORRECTION:
+                        # Correct spelling and improve text form while preserving special placeholders
+                        msg_text = ytcm_openai_service.correct_text(msg_text)
                     # Create a new custom message
-                    chat_msg = ytcm_ChatMessageCustom(msg['author'], msg['text'], ytcm_openai_service.is_male_username(msg['author']))
-
+                    chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']))
                     if not ytcm_find_message(chat_msg):
                         ytcm_chat_messages.append(chat_msg)
                         if YTCM_TRACE_MODE:
