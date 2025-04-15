@@ -163,7 +163,7 @@ body {
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    padding-top: 0rem; /* Allinea con l'inizio della lista messaggi */
+    padding-top: 0rem; /* Aligns with the beginning of the message list */
     padding-right: 0px;
     padding-left: .5em;
 }

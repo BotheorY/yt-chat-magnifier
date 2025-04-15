@@ -1,4 +1,4 @@
-/* Stili per l'effetto lampeggiante e il feedback di copia */
+/* Styles for the flashing effect and copy feedback */
 .message-flash {
     animation: flash 1.2s ease-in-out;
 }

@@ -63,7 +63,7 @@ $(document).ready(function() {
         });
     });
     
-    // Gestione disconnessione (usando event delegation per elementi dinamici)
+    // Disconnection management (using event delegation for dynamic elements)
     $(document).on('click', '#disconnect-btn', function() {
         $.ajax({
             url: '/ytcm_disconnect',
@@ -155,10 +155,8 @@ $(document).ready(function() {
                 
                 // Create message text container
                 const messageText = $('<div></div>');
-                // Uso HTML per mettere in grassetto il nome dell'autore e parsare le emoticon
                 const parsedText = parseYouTubeEmojisToHTML(msg.text);
                 messageText.html(`[<strong>${msg.author}</strong>] - ${parsedText}`);
-                // Nota: cambiato .text() in .html() per supportare i tag HTML e le emoticon
                 
                 // Create toggle button
                 const toggleBtn = $('<button class="btn btn-sm ms-2"></button>');
@@ -181,9 +179,10 @@ $(document).ready(function() {
                 // Add click event to show overlay (single click)
                 listItem.click(function() {                   
                     // Use a timer to differentiate between single and double click
+                    const $this = $(this);
                     clickTimer = setTimeout(function() {
                         clickTimer = null;
-                        showMessageOverlay(msg.author, msg.text);
+                        showMessageOverlay(msg.author, msg.text, $this);
                     }, 300); // 300ms delay to wait for potential double click
                 });
                 
@@ -213,7 +212,7 @@ $(document).ready(function() {
                     const textToCopy = `[${msg.author}] - ${msg.text}`;
                     navigator.clipboard.writeText(textToCopy).then(function() {
                         // Show temporary visual feedback
-                        const feedback = $('<span class="copy-feedback copy-success"><i class="bi bi-check"></i> Copiato negli appunti!</span>');
+                        const feedback = $('<span class="copy-feedback copy-success"><i class="bi bi-check"></i> Copied!</span>');
                         listItem.append(feedback);
                         
                         // Remove flash class and feedback after animation completes
@@ -222,8 +221,8 @@ $(document).ready(function() {
                             feedback.remove();
                         }, 1500);
                     }).catch(function(err) {
-                        console.error('Errore durante la copia: ', err);
-                        listItem.append('<span class="copy-feedback copy-error"><i class="bi bi-exclamation-triangle"></i> Errore durante la copia</span>');
+                        console.error('Error during copy: ', err);
+                        listItem.append('<span class="copy-feedback copy-error"><i class="bi bi-exclamation-triangle"></i> Error during copy</span>');
                         setTimeout(function() {
                             listItem.removeClass('message-flash');
                         }, 1500);
@@ -274,39 +273,135 @@ $(document).ready(function() {
 });
 
 
-// Gestione dell'overlay dei messaggi
+// Message overlay management
 $(document).ready(function() {
-    // Funzione per mostrare l'overlay con il messaggio
-    window.showMessageOverlay = function(author, text) {
+    // Function to show the overlay with the message
+    window.showMessageOverlay = function(author, text, element) {
         // Don't show overlay if double click was detected
         if (preventSingleClick) {
             preventSingleClick = false;
             return;
         }
+        
+        // Get the message ID from the clicked element
+        const messageId = element.attr('data-id');
+        const isMale = element.attr('data-ismale') === 'true';
+        
         $('#overlay-author').text(author);
         $('#overlay-content').html(parseYouTubeEmojisToHTML(text));
+        
+        // Add the audio player or loading image
+        checkAndAddAudioPlayer(messageId, text, isMale);
+        
         $('#message-overlay').css('display', 'flex');
     };
     
-    // Chiudi l'overlay quando si clicca sul pulsante di chiusura
+    // Close the overlay when clicking the close button
     $('#overlay-close').click(function() {
+        // Stop audio playback if it's playing
+        const audioElement = $('#audio-container audio')[0];
+        if (audioElement && !audioElement.paused) {
+            audioElement.pause();
+            audioElement.currentTime = 0;
+        }
+        
         $('#message-overlay').css('display', 'none');
     });
     
-    // Copia il testo del messaggio negli appunti
+    // Copy the message text to the clipboard
     $('#overlay-copy').click(function() {
-/*        const text = `[${$('#overlay-author').text()}] - ${$('#overlay-content').text()}`;    */
         const text = $('#overlay-content').text();
         navigator.clipboard.writeText(text).then(function() {
-            // Feedback visivo temporaneo
+            // Temporary visual feedback
             const originalText = $('#overlay-copy').html();
-            $('#overlay-copy').html('<i class="bi bi-check"></i> Copiato!');
+            $('#overlay-copy').html('<i class="bi bi-check"></i> Copied!');
             setTimeout(function() {
                 $('#overlay-copy').html(originalText);
             }, 2000);
         }).catch(function(err) {
-            console.error('Errore durante la copia: ', err);
+            console.error('Error during copy: ', err);
         });
     });
+    
+    // Function to check and add the audio player
+    function checkAndAddAudioPlayer(messageId, text, isMale) {
+        if (!messageId) return;
+        
+        // Check if TTS is enabled
+        if (typeof ytcm_tts_enabled !== 'undefined' && !ytcm_tts_enabled) {
+            return;
+        }
+
+        // Remove any existing audio players
+        $('#audio-container').remove();
+        
+        // Check if an audio file already exists for this message
+        $.ajax({
+            url: '/ytcm_check_audio_file',
+            type: 'GET',
+            data: { id: messageId },
+            success: function(response) {
+                if (response.exists) {
+                    // The audio file exists, add the player
+                    addAudioPlayer(messageId);
+                } else {
+                    // The audio file does not exist, show the loading image
+                    $('.message-overlay-footer').prepend('<div id="audio-container"><img src="/static/images/loading-bar.gif" alt="Loading..." style="height: 40px;"></div>');
+                    
+                    // Request the generation of the audio file
+                    $.ajax({
+                        url: '/ytcm_generate_audio',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            id: messageId,
+                            text: text,
+                            is_male: isMale
+                        }),
+                        success: function(genResponse) {
+                            if (genResponse.success) {
+                                // Replace the loading image with the audio player
+                                addAudioPlayer(messageId);
+                            } else {
+                                // Show an error message
+                                $('#audio-container').html('<div class="audio-error">Error generating audio</div>');
+                            }
+                        },
+                        error: function() {
+                            $('#audio-container').html('<div class="audio-error">Error generating audio</div>');
+                        }
+                    });
+                }
+            },
+            error: function() {
+                console.error('Error checking audio file');
+            }
+        });
+    }
+    
+    // Function to add the audio player
+    function addAudioPlayer(messageId) {
+        // Check if TTS is enabled
+        if (typeof ytcm_tts_enabled !== 'undefined' && !ytcm_tts_enabled) {
+            // Remove any existing audio players
+            $('#audio-container').remove();
+            return;
+        }
+        
+        // Remove any existing audio players before adding a new one
+        $('#audio-container').remove();
+        
+        const audioHtml = `
+            <div id="audio-container">
+                <audio controls>
+                    <source src="${YTCM_TTS_AUDIO_FILES_DIR}${messageId}.mp3" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        `;
+        
+        // Add the player at the beginning of the footer
+        $('.message-overlay-footer').prepend(audioHtml);
+    }
 });
 

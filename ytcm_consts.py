@@ -2,6 +2,7 @@
 YTCM_YT_TOKEN_FILE = 'config/ytcm_youtube_token.json'
 YTCM_GOOGLE_CONFIG_FILE = 'config/ytcm_google_credentials.json'
 YTCM_OPENAI_CONFIG_FILE = 'config/ytcm_openai_credentials.json'
+YTCM_POLLY_CONFIG_FILE = 'config/ytcm_polly_credentials.json'
 
 # Logging configuration
 YTCM_DEBUG_MODE = True  # Enable/disable error logging
@@ -16,6 +17,11 @@ YTCM_QUESTIONS_ONLY = True  # Process only questions
 YTCM_RETRIEVE_MSG_AUTHOR_GENDER = True
 YTCM_APPLY_SPELLING_CORRECTION = True
 YTCM_MSG_FORCED_LANG = 'Italian'   # If YTCM_APPLY_SPELLING_CORRECTION = True, force messages language (None = no translation)
+
+# Text-To-Speech configuration (available voices: https://docs.aws.amazon.com/polly/latest/dg/available-voices.html)
+YTCM_MALE_TTS_VOICE = 'Giorgio'
+YTCM_FEMALE_TTS_VOICE = 'Bianca'
+YTCM_TTS_AUDIO_FILES_DIR = 'static/tmp/ytcm/'  # Directory to store TTS audio files
 
 # ChatGPT configuration
 YTCM_GPT_MODEL = "chatgpt-4o-latest"  # GPT model to use

@@ -9,11 +9,15 @@ import uuid
 from logging.handlers import RotatingFileHandler
 from ytcm_youtube_chat_reader import YouTubeChatReader
 from ytcm_openai_service import OpenAIService
+from ytcm_polly_service import PollyService
 from ytcm_consts import *
 
 app = Flask(__name__)
 
 ytcm_ai_needed = YTCM_APPLY_MODERATION or YTCM_QUESTIONS_ONLY or YTCM_RETRIEVE_MSG_AUTHOR_GENDER or YTCM_APPLY_SPELLING_CORRECTION
+
+# Check if TTS service is enabled
+ytcm_tts_enabled = bool(YTCM_MALE_TTS_VOICE or YTCM_FEMALE_TTS_VOICE)
 
 # Logger configuration
 def setup_logger():
@@ -61,6 +65,7 @@ ytcm_chat_messages = []
 # Service instances
 ytcm_youtube_chat_reader = None
 ytcm_openai_service = not ytcm_ai_needed
+ytcm_polly_service = None
 
 def ytcm_find_message(message: ytcm_ChatMessageCustom) -> bool:
     global ytcm_chat_messages
@@ -80,15 +85,84 @@ def ytcm_load_config(config_file):
         logger.error(f"Error loading configuration file {config_file}: {str(e)}")
         return None
 
+def ytcm_clear_audio_files():
+    try:
+        # Check if the directory exists
+        if not os.path.exists(YTCM_TTS_AUDIO_FILES_DIR):
+            os.makedirs(YTCM_TTS_AUDIO_FILES_DIR)
+            return jsonify({'success': True, 'message': 'Directory was empty'})
+        
+        # Count the deleted files
+        deleted_count = 0
+        
+        # Delete all .mp3 files in the directory
+        for filename in os.listdir(YTCM_TTS_AUDIO_FILES_DIR):
+            if filename.endswith('.mp3'):
+                file_path = os.path.join(YTCM_TTS_AUDIO_FILES_DIR, filename)
+                os.remove(file_path)
+                deleted_count += 1
+                if YTCM_TRACE_MODE:
+                    logger.info(f"Deleted audio file: {filename}")
+        
+        if YTCM_TRACE_MODE:
+            logger.info(f"Cleared {deleted_count} audio files from {YTCM_TTS_AUDIO_FILES_DIR}")
+        
+        return jsonify({'success': True, 'message': f'Deleted {deleted_count} audio files'})
+    
+    except Exception as e:
+        if YTCM_DEBUG_MODE:
+            logger.error(f"Error clearing audio files: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/ytcm_check_audio_file')
+def ytcm_check_audio_file():
+    message_id = request.args.get('id')
+    if not message_id:
+        return jsonify({'exists': False, 'error': 'Message ID is required'})
+    
+    file_path = os.path.join(YTCM_TTS_AUDIO_FILES_DIR, f"{message_id}.mp3")
+    exists = os.path.exists(file_path)
+    
+    return jsonify({'exists': exists})
+
+@app.route('/ytcm_generate_audio', methods=['POST'])
+def ytcm_generate_audio():
+    global ytcm_polly_service
+    
+    if not ytcm_tts_enabled:
+        return jsonify({'success': False, 'error': 'TTS service is not enabled'})
+    
+    if not ytcm_polly_service or not ytcm_polly_service.is_available():
+        return jsonify({'success': False, 'error': 'AWS Polly service not available'})
+    
+    try:
+        data = request.get_json()
+        message_id = data.get('id')
+        text = data.get('text')
+        is_male = data.get('is_male', True)
+        
+        if not message_id or not text:
+            return jsonify({'success': False, 'error': 'Message ID and text are required'})
+        
+        # Generate the audio file
+        success = ytcm_polly_service.generate_audio(text, message_id, is_male)
+        
+        return jsonify({'success': success})
+    
+    except Exception as e:
+        if YTCM_DEBUG_MODE:
+            logger.error(f"Error generating audio: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/')
 def ytcm_index():
     ytcm_connect(True)
     live_title = ytcm_youtube_chat_reader.get_live_title() if ytcm_youtube_chat_reader else '...'
-    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title)
+    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title, tts_enabled=ytcm_tts_enabled, tts_audio_files_dir=YTCM_TTS_AUDIO_FILES_DIR)
 
 @app.route('/ytcm_connect', methods=['POST'])
 def ytcm_connect(resume_only=False):
-    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_chat_messages
+    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_polly_service, ytcm_chat_messages
     
     try:
         # Loading configurations
@@ -98,6 +172,10 @@ def ytcm_connect(resume_only=False):
         
         if not google_config or (ytcm_ai_needed and (not openai_config)):
             return jsonify({'success': False, 'error': 'Error loading configurations'})
+        
+        # Initialize AWS Polly service if enabled
+        if ytcm_tts_enabled and not ytcm_polly_service:
+            ytcm_polly_service = PollyService(YTCM_POLLY_CONFIG_FILE)
         
         # Service initialization
         ytcm_youtube_chat_reader = YouTubeChatReader(google_config)
@@ -118,6 +196,7 @@ def ytcm_connect(resume_only=False):
                     logger.info("YouTube connection initialized")
                 # Clear messages
                 ytcm_chat_messages = []
+                ytcm_clear_audio_files()
 
             return jsonify({'success': True})
         else:
@@ -140,7 +219,7 @@ def ytcm_oauth2callback():
 
 @app.route('/ytcm_disconnect', methods=['POST'])
 def ytcm_disconnect():
-    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_chat_messages
+    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_polly_service, ytcm_chat_messages
     
     try:
         if ytcm_youtube_chat_reader:
@@ -152,6 +231,7 @@ def ytcm_disconnect():
         
         # Clear messages
         ytcm_chat_messages = []
+        ytcm_clear_audio_files()
         
         if YTCM_TRACE_MODE:
             logger.info("YouTube disconnection successful")
@@ -208,12 +288,14 @@ def ytcm_get_messages():
         new_messages = ytcm_youtube_chat_reader.get_new_messages()
         if new_messages == False:
             ytcm_chat_messages = []
+            ytcm_clear_audio_files()
             return jsonify({'success': True, 'messages': [], 'error': 'No live stream found on the channel'})
             
         live_chat_id = ytcm_youtube_chat_reader.live_chat_id
         if live_chat_id != ytcm_last_live_chat_id:
             ytcm_last_live_chat_id = live_chat_id
             ytcm_chat_messages = []
+            ytcm_clear_audio_files()
             if YTCM_TRACE_MODE:
                 logger.info(f"Live chat ID changed: {live_chat_id}")
                 
@@ -261,6 +343,10 @@ if __name__ == '__main__':
     if not os.path.exists('config'):
         os.makedirs('config')
     
+    # Create the directory for audio files if it doesn't exist
+    if not os.path.exists(YTCM_TTS_AUDIO_FILES_DIR):
+        os.makedirs(YTCM_TTS_AUDIO_FILES_DIR)
+    
     # Check if configuration files exist
     if not os.path.exists(YTCM_GOOGLE_CONFIG_FILE):
         with open(YTCM_GOOGLE_CONFIG_FILE, 'w') as f:
@@ -274,6 +360,15 @@ if __name__ == '__main__':
         with open(YTCM_OPENAI_CONFIG_FILE, 'w') as f:
             json.dump({
                 "api_key": "YOUR_OPENAI_API_KEY"
+            }, f, indent=4)
+    
+    # Create the example file for AWS Polly credentials if it doesn't exist
+    if not os.path.exists(YTCM_POLLY_CONFIG_FILE):
+        with open(YTCM_POLLY_CONFIG_FILE, 'w') as f:
+            json.dump({
+                "aws_access_key_id": "YOUR_AWS_ACCESS_KEY_ID",
+                "aws_secret_access_key": "YOUR_AWS_SECRET_ACCESS_KEY",
+                "region_name": "eu-west-1"
             }, f, indent=4)
 
     # Start the application

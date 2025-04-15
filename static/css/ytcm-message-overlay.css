@@ -1,4 +1,4 @@
-/* Stili per la finestra overlay dei messaggi */
+/* Styles for the message overlay window */
 .message-overlay {
     position: fixed;
     top: 2em;
@@ -67,10 +67,50 @@
 
 .message-overlay-footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     padding: 1em 1em;
     border-top: 1px solid #000;
     background-color: lightgrey;
+}
+
+audio {
+    width: 100% !important;
+    height: 54px;
+}
+
+#audio-container {
+    display: flex;
+    align-items: center;
+    margin-right: 2em; 
+    min-width: 70% !important;   
+    padding: 0px !important;
+}
+
+#audio-container audio {
+    height: 54px !important;
+}
+
+#audio-container audio::-webkit-media-controls-panel,
+#audio-container audio::-webkit-media-controls-enclosure {
+    transform: scale(1);
+    transform-origin: left center;
+    padding-right: 2em;
+}
+
+#audio-container audio::-webkit-media-controls-play-button,
+#audio-container audio::-webkit-media-controls-volume-slider,
+#audio-container audio::-webkit-media-controls-mute-button,
+#audio-container audio::-webkit-media-controls-timeline,
+#audio-container audio::-webkit-media-controls-current-time-display,
+#audio-container audio::-webkit-media-controls-time-remaining-display {
+    transform: scale(1);
+}
+
+.audio-error {
+    color: red;
+    font-weight: bold;
+    margin-right: 1em;
 }
 
 .message-overlay-copy {

@@ -27,6 +27,7 @@ logs/*.log
 # Sensitive configuration files
 config/ytcm_google_credentials.json
 config/ytcm_openai_credentials.json
+config/ytcm_polly_credentials.json
 config/ytcm_youtube_token.json
 
 # OS specific files
@@ -41,3 +42,7 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Temporary files
+static/tmp/*
+!static/tmp/**/.gitkeep

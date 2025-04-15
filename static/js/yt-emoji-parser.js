@@ -1,14 +1,11 @@
 /**
  * YouTube Emoji Parser
  * 
- * Questo script gestisce il parsing e la visualizzazione delle emoticon di YouTube
- * nelle chat durante le live streaming.
- * 
- * Versione modificata: sostituzione dei codici delle emoticon con immagini online,
- * utilizzando la corrispondenza reale estratta dal file CSV.
+ * This script manages the parsing and display of YouTube emoticons
+ * in chats during live streaming.
  */
 
-// Mappa da codici emoji alle URL reali delle immagini (estratte dal CSV)
+// Map from emoji codes to real image URLs (extracted from CSV)
 const ytEmojiMap = {
     ':hand-pink-waving:': 'https://yt3.ggpht.com/KOxdr_z3A5h1Gb7kqnxqOCnbZrBmxI2B_tRQ453BhTWUhYAlpg5ZP8IKEBkcvRoY8grY91Q=w24-h24-c-k-nd',
     ':face-blue-smiling:': 'https://yt3.ggpht.com/cktIaPxFwnrPwn-alHvnvedHLUJwbHi8HCK3AgbHpphrMAW99qw0bDfxuZagSY5ieE9BBrA=w24-h24-c-k-nd',
@@ -113,19 +110,17 @@ const ytEmojiMap = {
 };
 
 /**
- * Sostituisce i codici delle emoticon con elementi HTML per una visualizzazione più ricca e personalizzabile.
- * @param {string} text - Il testo del messaggio da processare.
- * @returns {string} - Il testo HTML con le emoticon sostituite da immagini.
+ * Replaces emoticon codes with HTML elements for richer and more customizable display.
  */
 function parseYouTubeEmojisToHTML(text) {
     if (!text) return text;
     
     let parsedText = text;
     
-    // Cerca tutti i codici di emoticon nel formato :nome-emoticon:
+    // Search for all emoticon codes in the format :emoticon-name:
     const emojiRegex = /:([-a-z0-9+]+):/g;
     
-    // Sostituisce i codici trovati con elementi HTML che incorporano immagini online
+    // Replace found codes with HTML elements that incorporate online images
     parsedText = parsedText.replace(emojiRegex, (match) => {
         if (ytEmojiMap[match]) {
             return `<img src="${ytEmojiMap[match]}" alt="${match}" title="${match}" class="yt-emoji" />`;

@@ -74,7 +74,7 @@
         </div>
     </div>
     
-    <!-- Overlay per visualizzare i messaggi -->
+    <!-- Overlay to display messages -->
     <div id="message-overlay" class="message-overlay">
         <div class="message-overlay-header">
             <div class="message-overlay-author" id="overlay-author"></div>
@@ -85,7 +85,7 @@
         </div>
         <div class="message-overlay-footer">
             <button class="message-overlay-copy" id="overlay-copy">
-                <i class="bi bi-clipboard"></i> Copia Testo
+                <i class="bi bi-clipboard"></i> Copy Text
             </button>
         </div>
     </div>
@@ -109,6 +109,8 @@
         // Pass variables from server to JavaScript
         var pollingIntervalMs = {{ polling_interval }};
         var isConnected = {% if connected %}true{% else %}false{% endif %};
+        var ytcm_tts_enabled = {{ 'true' if tts_enabled else 'false' }};
+        var YTCM_TTS_AUDIO_FILES_DIR = "/{{ tts_audio_files_dir }}";
     </script>
 </body>
 </html>

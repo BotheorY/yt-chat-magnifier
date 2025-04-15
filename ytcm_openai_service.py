@@ -99,7 +99,7 @@ class OpenAIService:
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=500,
-                temperature=1.5
+                temperature=0.7
             )
             
             # Extract the response
