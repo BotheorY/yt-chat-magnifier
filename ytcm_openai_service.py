@@ -145,9 +145,13 @@ class OpenAIService:
                 placeholder_map[placeholder] = emoticon_code
             
             # Prepare the prompt for the API
+            if YTCM_MSG_FORCED_LANG:
+                translation_addendum = f" \nIf the text language is different from {YTCM_MSG_FORCED_LANG}, translate the text into {YTCM_MSG_FORCED_LANG}."
+            else:
+                translation_addendum = ""
             prompt = f"""Correct the spelling and improve the form of the following text. 
             Maintain the original meaning and tone. Do not add or remove information.
-            Do not modify any placeholders in the format __EMOTICON_X__.
+            Do not modify any placeholders in the format __EMOTICON_X__.{translation_addendum}
             
             Text: {protected_text}
             """

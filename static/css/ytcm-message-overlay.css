@@ -1,0 +1,99 @@
+/* Stili per la finestra overlay dei messaggi */
+.message-overlay {
+    position: fixed;
+    top: 2em;
+    left: 2em;
+    right: 2em;
+    bottom: 2em;
+    background-color: white;
+    border: 2px solid #000;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.message-overlay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    border-bottom: 1px solid #000;
+    background-color: rgb(63, 63, 63);
+    color: white;
+}
+
+.message-overlay-author {
+    font-size: 3em;
+    font-weight: bold;
+    text-align: center;
+    flex-grow: 1;
+    padding-right: 0px !important;
+    padding-left: 0.5em !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+}
+
+.message-overlay-close {
+    color: red;
+    font-size: 3em;
+    font-weight: bold;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding-right: 0.3em !important;
+    padding-left: 0.3em !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+}
+
+.message-overlay-close:hover {
+    background-color: indianred;
+    border-radius: 50%;
+}
+
+.message-overlay-content {
+    flex-grow: 1;
+    padding-top: 0px;
+    padding-right: 0.5em !important;
+    padding-left: 0.5em !important;
+    overflow-y: auto;
+    font-size: 3em;
+}
+
+.message-overlay-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1em 1em;
+    border-top: 1px solid #000;
+    background-color: lightgrey;
+}
+
+.message-overlay-copy {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.message-overlay-copy:hover {
+    background-color: #0069d9;
+}
+
+#message-overlay .yt-emoji {
+    transform: scale(2) !important;
+}
+
+#message-overlay .yt-emoji:hover {
+    transform: scale(4) !important;
+}

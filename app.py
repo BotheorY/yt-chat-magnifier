@@ -41,16 +41,17 @@ logger = setup_logger()
 
 # Class to manage chat messages
 class ytcm_ChatMessageCustom:
-    def __init__(self, author, text, is_male=True):
+    def __init__(self, author, text, is_male=True, raw_text=None):
         self.id = str(uuid.uuid4())
         self.author = author
         self.text = text
         self.datetime = datetime.datetime.now()
         self.is_male = is_male
         self.show = True
+        self.raw_text = raw_text if raw_text else text
 
     def __str__(self):
-        return f"[{self.author}] - {self.text}"
+        return f"[{self.author}] - {self.raw_text}"
 
 ytcm_last_live_chat_id = None
 
@@ -232,7 +233,7 @@ def ytcm_get_messages():
                         # Correct spelling and improve text form while preserving special placeholders
                         msg_text = ytcm_openai_service.correct_text(msg_text)
                     # Create a new custom message
-                    chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']))
+                    chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']), msg['text'])
                     if not ytcm_find_message(chat_msg):
                         ytcm_chat_messages.append(chat_msg)
                         if YTCM_TRACE_MODE:

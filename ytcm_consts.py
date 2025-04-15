@@ -15,6 +15,7 @@ YTCM_QUESTIONS_ONLY = True  # Process only questions
 # Messages processing configuration
 YTCM_RETRIEVE_MSG_AUTHOR_GENDER = True
 YTCM_APPLY_SPELLING_CORRECTION = True
+YTCM_MSG_FORCED_LANG = 'Italian'   # If YTCM_APPLY_SPELLING_CORRECTION = True, force messages language (None = no translation)
 
 # ChatGPT configuration
 YTCM_GPT_MODEL = "chatgpt-4o-latest"  # GPT model to use

@@ -1,4 +1,5 @@
 let lastNMessages = 0;
+let preventSingleClick = false;
 
 $(document).ready(function() {
 
@@ -166,17 +167,71 @@ $(document).ready(function() {
                 toggleBtn.attr('title', msg.show ? 'Hide message' : 'Show message');
                 toggleBtn.click(function(e) {
                     e.preventDefault();
+                    e.stopPropagation(); // Prevent triggering the list item click
                     toggleMessageVisibility(msg.id, !msg.show);
                 });
-                                    
+                                
                 // Add elements to list item
                 listItem.append(messageText);
                 listItem.append(toggleBtn);
 
+                // Variable to track click timing
+                let clickTimer = null;
+                
+                // Add click event to show overlay (single click)
+                listItem.click(function() {                   
+                    // Use a timer to differentiate between single and double click
+                    clickTimer = setTimeout(function() {
+                        clickTimer = null;
+                        showMessageOverlay(msg.author, msg.text);
+                    }, 300); // 300ms delay to wait for potential double click
+                });
+                
+                // Add double click event to flash message and copy to clipboard
+                listItem.dblclick(function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Set flag to prevent single click
+                    preventSingleClick = true;
+                    
+                    // Clear the single click timer if it exists
+                    if (clickTimer) {
+                        clearTimeout(clickTimer);
+                        clickTimer = null;
+                    }
+                    
+                    // Reset the prevention flag after a short delay
+                    /* setTimeout(function() {
+                        preventSingleClick = false;
+                    }, 500); */
+                    
+                    // Add flash animation class
+                    listItem.addClass('message-flash');
+                    
+                    // Copy text to clipboard
+                    const textToCopy = `[${msg.author}] - ${msg.text}`;
+                    navigator.clipboard.writeText(textToCopy).then(function() {
+                        // Show temporary visual feedback
+                        const feedback = $('<span class="copy-feedback copy-success"><i class="bi bi-check"></i> Copiato negli appunti!</span>');
+                        listItem.append(feedback);
+                        
+                        // Remove flash class and feedback after animation completes
+                        setTimeout(function() {
+                            listItem.removeClass('message-flash');
+                            feedback.remove();
+                        }, 1500);
+                    }).catch(function(err) {
+                        console.error('Errore durante la copia: ', err);
+                        listItem.append('<span class="copy-feedback copy-error"><i class="bi bi-exclamation-triangle"></i> Errore durante la copia</span>');
+                        setTimeout(function() {
+                            listItem.removeClass('message-flash');
+                        }, 1500);
+                    });
+                });
+
                 messageList.append(listItem);
-
             }
-
         });
         
         let nMessages = messageList.children().length;
@@ -186,7 +241,6 @@ $(document).ready(function() {
             messageContainer.scrollTop(messageContainer[0].scrollHeight);
         }
         lastNMessages = nMessages;
-
     }
     
     // Function to toggle message visibility
@@ -217,5 +271,42 @@ $(document).ready(function() {
     if (isConnected) {
         startMessagePolling();
     }
+});
+
+
+// Gestione dell'overlay dei messaggi
+$(document).ready(function() {
+    // Funzione per mostrare l'overlay con il messaggio
+    window.showMessageOverlay = function(author, text) {
+        // Don't show overlay if double click was detected
+        if (preventSingleClick) {
+            preventSingleClick = false;
+            return;
+        }
+        $('#overlay-author').text(author);
+        $('#overlay-content').html(parseYouTubeEmojisToHTML(text));
+        $('#message-overlay').css('display', 'flex');
+    };
+    
+    // Chiudi l'overlay quando si clicca sul pulsante di chiusura
+    $('#overlay-close').click(function() {
+        $('#message-overlay').css('display', 'none');
+    });
+    
+    // Copia il testo del messaggio negli appunti
+    $('#overlay-copy').click(function() {
+/*        const text = `[${$('#overlay-author').text()}] - ${$('#overlay-content').text()}`;    */
+        const text = $('#overlay-content').text();
+        navigator.clipboard.writeText(text).then(function() {
+            // Feedback visivo temporaneo
+            const originalText = $('#overlay-copy').html();
+            $('#overlay-copy').html('<i class="bi bi-check"></i> Copiato!');
+            setTimeout(function() {
+                $('#overlay-copy').html(originalText);
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Errore durante la copia: ', err);
+        });
+    });
 });
 
