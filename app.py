@@ -215,7 +215,7 @@ def ytcm_oauth2callback():
     # This route is necessary to handle Google's OAuth2 authentication callback
     # The authentication flow is managed internally by InstalledAppFlow in ytcm_youtube_chat_reader.py
     # This route serves only as a return point after authentication
-    return redirect(url_for('index'))
+    return redirect(url_for('ytcm_index'))
 
 @app.route('/ytcm_disconnect', methods=['POST'])
 def ytcm_disconnect():
