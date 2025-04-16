@@ -158,7 +158,7 @@ def ytcm_generate_audio():
 def ytcm_index():
     ytcm_connect(True)
     live_title = ytcm_youtube_chat_reader.get_live_title() if ytcm_youtube_chat_reader else '...'
-    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title, tts_enabled=ytcm_tts_enabled, tts_audio_files_dir=YTCM_TTS_AUDIO_FILES_DIR)
+    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title, tts_enabled=ytcm_tts_enabled, tts_audio_files_dir=YTCM_TTS_AUDIO_FILES_DIR, layout_style=YTCM_LAYOUT_STYLE)
 
 @app.route('/ytcm_connect', methods=['POST'])
 def ytcm_connect(resume_only=False):

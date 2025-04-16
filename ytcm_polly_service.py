@@ -64,7 +64,7 @@ class PollyService:
                 Text=cleaned_text,
                 OutputFormat='mp3',
                 VoiceId=voice_id,
-                SampleRate='16000'
+                SampleRate='24000'
             )
             # Creates the directory if it does not exist
             os.makedirs(YTCM_TTS_AUDIO_FILES_DIR, exist_ok=True)

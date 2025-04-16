@@ -28,3 +28,5 @@ YTCM_GPT_MODEL = "chatgpt-4o-latest"  # GPT model to use
 
 # Polling configuration
 YTCM_POLLING_INTERVAL_MS = 10000  # Polling interval in milliseconds for fetching messages
+
+YTCM_LAYOUT_STYLE = 'standard'  # Avaiable layout style: standard, dark, high-contrast

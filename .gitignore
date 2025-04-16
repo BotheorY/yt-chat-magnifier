@@ -44,5 +44,5 @@ Thumbs.db
 .env.production.local
 
 # Temporary files
-static/tmp/*
-!static/tmp/**/.gitkeep
+static/tmp/*/*.mp3
+!static/tmp/*/.gitkeep

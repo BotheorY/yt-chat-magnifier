@@ -100,9 +100,7 @@
     <!-- Custom JS -->
     <script src="/static/js/yt-emoji-parser.js"></script>
     <script src="/static/js/yt-chat-magnifier.js"></script>
-    
-    <!-- CSS -->
-    <link href="/static/css/ytcm-message-overlay.css" rel="stylesheet">
+    <script src="/static/js/ytcm-style-loader.js"></script>
     
     <!-- Reference to external JavaScript file -->    
     <script>
@@ -111,6 +109,7 @@
         var isConnected = {% if connected %}true{% else %}false{% endif %};
         var ytcm_tts_enabled = {{ 'true' if tts_enabled else 'false' }};
         var YTCM_TTS_AUDIO_FILES_DIR = "/{{ tts_audio_files_dir }}";
+        var ytcmLayoutStyle = "{{ layout_style }}";
     </script>
 </body>
 </html>
