@@ -1,0 +1,32 @@
+/* Styles for the flashing effect and copy feedback */
+.message-flash {
+    animation: flash 1.2s ease-in-out;
+}
+
+@keyframes flash {
+    0%, 100% { background-color: inherit; }
+    25%, 75% { background-color: #ffff00; }
+    50% { background-color: #ffffc0; }
+}
+
+.copy-feedback {
+    display: inline-block;
+    margin-left: 10px;
+    font-weight: bold;
+    animation: fadeInOut 1.5s ease-in-out;
+}
+
+.copy-success {
+    color: green;
+}
+
+.copy-error {
+    color: red;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; }
+}

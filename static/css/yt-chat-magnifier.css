@@ -1,0 +1,166 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0 auto;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    max-width: 1200px;
+}
+
+.col-12, .card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.row {
+    display: flex;
+    flex: 1;
+}
+
+.card-body .row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+}
+
+.card {
+    border-width: 0;
+}
+
+.card-header {
+    margin-top: .65em;
+}
+
+.card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding-left: 1em !important;
+    padding-right: 1em !important;
+ }
+
+#messages-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.message-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    max-height: calc(100vh - 200px);
+    border-width: 4px;
+}
+
+#message-list li {
+    font-size: 1.5em;
+}
+
+#message-list li:nth-child(even) {
+    background-color: white;
+}
+
+#message-list li:nth-child(odd) {
+    background-color:rgb(240, 240, 240);
+}
+
+#message-list li:hover {
+    background-color: aquamarine !important;
+    cursor: pointer;
+}
+
+#message-list .btn {
+    font-size: 1.5em;
+    background-color: blanchedalmond;
+}
+
+.connect-btn {
+    background-color: green;
+    border-color: green;
+}
+
+.disconnect-btn {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Ensures that the connection and disconnection buttons remain always visible */
+.connect-btn:hover,
+.disconnect-btn:hover {
+    color: white !important; /* Forces the text color to remain white */
+    opacity: 1 !important; /* Keeps opacity at maximum */
+    visibility: visible !important; /* Ensures it remains visible */
+}
+
+#connect-btn:hover {
+    background-color:#28a745 !important;
+}
+
+#disconnect-btn:hover {
+    background-color: orangered !important;
+}
+
+.scroll-button {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    border-color: black;
+    border-width: 4px;
+    color: white;
+    opacity: 1 !important;
+    visibility: visible !important;
+    border-radius: 4px;
+    font-size: 1.5em;
+    font-weight: 500;
+    height: 100%;
+}
+
+.scroll-button:hover {
+    border-color: black;
+    border-width: 4px;
+}
+
+.scroll-down-button {
+    background-color: #007bff;
+}
+
+.scroll-down-button:hover {
+    background-color: #3596ff !important;
+}
+
+.scroll-up-button {
+    background-color: green;
+}
+
+.scroll-up-button:hover {
+    background-color: #28a745 !important;
+}
+
+#scroll-commands {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 0rem; /* Aligns with the beginning of the message list */
+    padding-right: 0px;
+    padding-left: .5em;
+}

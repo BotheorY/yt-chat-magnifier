@@ -1,0 +1,139 @@
+/* Styles for the message overlay window */
+.message-overlay {
+    position: fixed;
+    top: 2em;
+    left: 2em;
+    right: 2em;
+    bottom: 2em;
+    background-color: white;
+    border: 2px solid #000;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.message-overlay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    border-bottom: 1px solid #000;
+    background-color: rgb(63, 63, 63);
+    color: white;
+}
+
+.message-overlay-author {
+    font-size: 3em;
+    font-weight: bold;
+    text-align: center;
+    flex-grow: 1;
+    padding-right: 0px !important;
+    padding-left: 0.5em !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+}
+
+.message-overlay-close {
+    color: red;
+    font-size: 3em;
+    font-weight: bold;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding-right: 0.3em !important;
+    padding-left: 0.3em !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+}
+
+.message-overlay-close:hover {
+    background-color: indianred;
+    border-radius: 50%;
+}
+
+.message-overlay-content {
+    flex-grow: 1;
+    padding-top: 0px;
+    padding-right: 0.5em !important;
+    padding-left: 0.5em !important;
+    overflow-y: auto;
+    font-size: 3em;
+}
+
+.message-overlay-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1em 1em;
+    border-top: 1px solid #000;
+    background-color: lightgrey;
+}
+
+audio {
+    width: 100% !important;
+    height: 54px;
+}
+
+#audio-container {
+    display: flex;
+    align-items: center;
+    margin-right: 2em; 
+    min-width: 70% !important;   
+    padding: 0px !important;
+}
+
+#audio-container audio {
+    height: 54px !important;
+}
+
+#audio-container audio::-webkit-media-controls-panel,
+#audio-container audio::-webkit-media-controls-enclosure {
+    transform: scale(1);
+    transform-origin: left center;
+    padding-right: 2em;
+}
+
+#audio-container audio::-webkit-media-controls-play-button,
+#audio-container audio::-webkit-media-controls-volume-slider,
+#audio-container audio::-webkit-media-controls-mute-button,
+#audio-container audio::-webkit-media-controls-timeline,
+#audio-container audio::-webkit-media-controls-current-time-display,
+#audio-container audio::-webkit-media-controls-time-remaining-display {
+    transform: scale(1);
+}
+
+.audio-error {
+    color: red;
+    font-weight: bold;
+    margin-right: 1em;
+}
+
+.message-overlay-copy {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.message-overlay-copy:hover {
+    background-color: #0069d9;
+}
+
+#message-overlay .yt-emoji {
+    transform: scale(2) !important;
+}
+
+#message-overlay .yt-emoji:hover {
+    transform: scale(4) !important;
+}
