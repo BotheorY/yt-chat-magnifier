@@ -1,16 +1,19 @@
 /* Styles for the message overlay window - High Contrast Mode */
 .message-overlay {
     position: fixed;
-    top: 2em;
-    left: 2em;
-    right: 2em;
-    bottom: 2em;
+    top: 2rem;
+    left: 2rem;
+    right: 2rem;
+    bottom: 2rem;
     background-color: #000000;
-    border: 4px solid #ffff00;
+    border: 0.125rem solid #ffff00;
     z-index: 1000;
     display: none;
     flex-direction: column;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+    box-shadow: 0 0 1.25rem rgba(255, 255, 255, 0.7);
+    border-radius: 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .message-overlay-header {
@@ -18,33 +21,30 @@
     justify-content: space-between;
     align-items: center;
     padding: 0px;
-    border-bottom: 3px solid #ffff00;
+    border-bottom: 1px solid #ffff00;
     background-color: #000000;
     color: #ffff00;
 }
 
 .message-overlay-author {
-    font-size: 3em;
+    font-size: 3rem;
     font-weight: bold;
     text-align: center;
     flex-grow: 1;
-    padding-right: 0px !important;
-    padding-left: 0.5em !important;
-    padding-top: 0px !important;
-    padding-bottom: 0px !important;
+    padding: 0.5rem 0.5rem !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .message-overlay-close {
     color: #ff0000;
-    font-size: 3em;
+    font-size: 3rem;
     font-weight: bold;
     cursor: pointer;
     background: none;
     border: none;
-    padding-right: 0.3em !important;
-    padding-left: 0.3em !important;
-    padding-top: 0px !important;
-    padding-bottom: 0px !important;
+    padding: 0.5rem !important;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -59,11 +59,11 @@
 
 .message-overlay-content {
     flex-grow: 1;
-    padding-top: 0px;
-    padding-right: 0.5em !important;
-    padding-left: 0.5em !important;
+    padding: 1rem !important;
     overflow-y: auto;
-    font-size: 3em;
+    font-size: 40px !important;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     color: #ffffff;
 }
 
@@ -72,34 +72,112 @@
     justify-content: space-between;
     align-items: center;
     padding: 1em 1em;
-    border-top: 3px solid #ffff00;
+    border-top: 1px solid #ffff00;
     background-color: #000000;
 }
 
 audio {
     width: 100% !important;
-    height: 54px;
+    height: 3.375rem;
 }
 
 #audio-container {
     display: flex;
     align-items: center;
-    margin-right: 2em; 
+    margin-right: 1rem; 
     min-width: 70% !important;   
-    padding: 0px !important;
+    padding: 0 !important;
 }
 
 #audio-container audio {
-    height: 54px !important;
+    height: 3.375rem !important;
 }
 
 #audio-container audio::-webkit-media-controls-panel,
 #audio-container audio::-webkit-media-controls-enclosure {
     transform: scale(1);
     transform-origin: left center;
-    padding-right: 2em;
-    background-color: white !important;    
-    border: 4px solid yellow !important;
+    padding-right: 1rem;
+}
+
+/* Media Queries per la responsività */
+@media (max-width: 1200px) {
+    .message-overlay {
+        top: 1.5rem;
+        left: 1.5rem;
+        right: 1.5rem;
+        bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .message-overlay-author {
+        font-size: 1.75rem;
+    }
+    
+    .message-overlay-close {
+        font-size: 1.75rem;
+    }
+    
+    .message-overlay-content {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .message-overlay {
+        top: 1rem;
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+    }
+    
+    .message-overlay-author {
+        font-size: 1.5rem;
+    }
+    
+    .message-overlay-close {
+        font-size: 1.5rem;
+    }
+    
+    .message-overlay-content {
+        font-size: 1.1rem;
+    }
+    
+    .message-overlay-footer {
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .message-overlay {
+        top: 0.5rem;
+        left: 0.5rem;
+        right: 0.5rem;
+        bottom: 0.5rem;
+    }
+    
+    .message-overlay-author {
+        font-size: 1.25rem;
+    }
+    
+    .message-overlay-close {
+        font-size: 1.25rem;
+        padding: 0.25rem !important;
+    }
+    
+    .message-overlay-content {
+        font-size: 1rem;
+        padding: 0.5rem !important;
+    }
+    
+    audio {
+        height: 2.5rem;
+    }
+    
+    #audio-container audio {
+        height: 2.5rem !important;
+    }
 }
 
 #audio-container audio::-webkit-media-controls-play-button,

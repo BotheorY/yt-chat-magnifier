@@ -2,12 +2,15 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-size: 16px;
 }
 
 body {
     display: flex;
     flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 .container {
@@ -19,6 +22,7 @@ body {
     height: 100vh;
     max-height: 100vh;
     overflow: hidden;
+    width: 100%;
     max-width: 1200px;
 }
 
@@ -26,17 +30,19 @@ body {
     display: flex;
     flex-direction: column;
     flex: 1;
+    width: 100%;
 }
 
 .row {
     display: flex;
     flex: 1;
+    width: 100%;
 }
 
 .card-body .row {
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
     align-items: flex-start !important;
 }
 
@@ -46,14 +52,14 @@ body {
 
 .card-header {
     margin-top: .65em;
+    padding: 0.75rem 1rem;
 }
 
 .card-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding-left: 1em !important;
-    padding-right: 1em !important;
+    padding: 1rem !important;
  }
 
 #messages-container {
@@ -61,18 +67,26 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    width: 100%;
 }
 
 .message-list {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
-    max-height: calc(100vh - 200px);
-    border-width: 4px;
+    max-height: calc(100vh - 220px) !important;
+    border-width: 0.25rem;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    margin-bottom: 0;
+    max-height: calc(100vh - 220px);
 }
 
 #message-list li {
-    font-size: 1.5em;
+    font-size: 1.25rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 #message-list li:nth-child(even) {
@@ -124,14 +138,15 @@ body {
     justify-content: center;
     align-items: center;
     border-color: black;
-    border-width: 4px;
+    border-width: 0.25rem;
     color: white;
     opacity: 1 !important;
     visibility: visible !important;
-    border-radius: 4px;
-    font-size: 1.5em;
+    border-radius: 0.25rem;
+    font-size: 1.25rem;
     font-weight: 500;
     height: 100%;
+    padding: 0.5rem;
 }
 
 .scroll-button:hover {
@@ -160,7 +175,79 @@ body {
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    padding-top: 0rem; /* Aligns with the beginning of the message list */
-    padding-right: 0px;
-    padding-left: .5em;
+    padding-top: 0; /* Aligns with the beginning of the message list */
+    padding-right: 0;
+    padding-left: 0.5rem;
+}
+
+/* Media Queries per la responsività */
+@media (max-width: 1200px) {
+    .container {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+}
+
+@media (max-width: 992px) {
+    html, body {
+        font-size: 15px;
+    }
+    
+    #message-list li {
+        font-size: 1.1rem;
+    }
+    
+    .scroll-button {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .card-body .row {
+        flex-direction: column !important;
+    }
+    
+    .col-md-10, .col-md-2 {
+        width: 100%;
+    }
+    
+    #scroll-commands {
+        flex-direction: row;
+        justify-content: center;
+        padding-left: 0;
+        margin-top: 1rem;
+    }
+    
+    .scroll-button {
+        margin: 0 0.25rem;
+    }
+    
+    .message-list {
+        max-height: calc(100vh - 250px);
+    }
+}
+
+@media (max-width: 576px) {
+    html, body {
+        font-size: 14px;
+    }
+    
+    .card-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    #message-list li {
+        font-size: 1rem;
+        padding: 0.5rem;
+    }
+    
+    .connect-btn, .disconnect-btn {
+        font-size: 1rem;
+        padding: 0.5rem;
+    }
+    
+    .message-list {
+        max-height: calc(100vh - 220px);
+        padding: 0.5rem !important;
+    }
 }

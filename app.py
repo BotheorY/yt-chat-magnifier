@@ -11,6 +11,7 @@ from ytcm_polly_service import PollyService
 from ytcm_consts import *
 from googleapiclient.discovery import build
 from urllib.parse import urlparse
+import hashlib
 
 app = Flask(__name__)
 
@@ -21,20 +22,37 @@ ytcm_tts_enabled = bool(YTCM_MALE_TTS_VOICE or YTCM_FEMALE_TTS_VOICE)
 
 # Logger configuration
 def setup_logger():
-    if not os.path.exists(os.path.abspath(os.path.join(os.path.dirname(__file__), 'logs'))):
-        os.makedirs(os.path.abspath(os.path.join(os.path.dirname(__file__), 'logs')))
+    # Create logs directory if it doesn't exist
+    logs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'logs'))
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
     
     logger = logging.getLogger('chat_magnifier')
     logger.setLevel(logging.DEBUG if YTCM_DEBUG_MODE else logging.ERROR)
     
-    # Handler for log file
-    file_handler = RotatingFileHandler(os.path.abspath(os.path.join(os.path.dirname(__file__), 'logs', 'yt-chat-magnifier.log')), maxBytes=10485760, backupCount=10)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
-    logger.addHandler(file_handler)
+    # Remove any existing handlers to avoid duplicates
+    if logger.handlers:
+        for handler in logger.handlers:
+            logger.removeHandler(handler)
     
-    # Handler for console
+    try:
+        # Handler for log file with error handling
+        log_file_path = os.path.join(logs_dir, 'yt-chat-magnifier.log')
+        file_handler = RotatingFileHandler(
+            log_file_path, 
+            maxBytes=10485760, 
+            backupCount=10,
+            delay=True  # Delay file opening until first log write
+        )
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        logger.addHandler(file_handler)
+    except (OSError, IOError) as e:
+        # Fall back to console-only logging if file handler fails
+        print(f"Warning: Could not set up file logging: {str(e)}")
+    
+    # Handler for console (always add this as a fallback)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     logger.addHandler(console_handler)
@@ -51,13 +69,13 @@ audio_file_dir_full_path = get_audio_file_dir_full_path()
 # Class to manage chat messages
 class ytcm_ChatMessageCustom:
     def __init__(self, author, text, is_male=True, raw_text=None):
-        self.id = str(uuid.uuid4())
         self.author = author
         self.text = text
         self.datetime = datetime.datetime.now()
         self.is_male = is_male
         self.show = True
         self.raw_text = raw_text if raw_text else text
+        self.id = hashlib.sha256(f"{author}|{self.raw_text}".encode()).hexdigest()
 
     def __str__(self):
         return f"[{self.author}] - {self.raw_text}"
@@ -66,6 +84,7 @@ ytcm_last_live_chat_id = None
 
 # List to store chat messages
 ytcm_chat_messages = []
+ytcm_hidden_msg_ids: set = set()
 
 # Service instances
 ytcm_youtube_chat_reader = None
@@ -163,7 +182,8 @@ def ytcm_generate_audio():
 def ytcm_index():
     ytcm_connect(True)
     live_title = ytcm_youtube_chat_reader.get_live_title() if ytcm_youtube_chat_reader else '...'
-    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title, tts_enabled=ytcm_tts_enabled, tts_audio_files_dir=YTCM_TTS_AUDIO_FILES_DIR, layout_style=YTCM_LAYOUT_STYLE)
+    channel_name = ytcm_youtube_chat_reader.get_channel_name() if ytcm_youtube_chat_reader else '...'
+    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title, channel_name=channel_name, tts_enabled=ytcm_tts_enabled, tts_audio_files_dir=YTCM_TTS_AUDIO_FILES_DIR, layout_style=YTCM_LAYOUT_STYLE)
 
 @app.route('/ytcm_connect', methods=['POST'])
 def ytcm_connect(resume_only=False):
@@ -296,7 +316,7 @@ def ytcm_disconnect():
 
 @app.route('/ytcm_toggle_message_visibility', methods=['POST'])
 def ytcm_toggle_message_visibility():
-    global ytcm_chat_messages
+    global ytcm_chat_messages, ytcm_hidden_msg_ids
     
     try:
         # Get message ID and new show value from request
@@ -306,6 +326,9 @@ def ytcm_toggle_message_visibility():
         
         if not message_id:
             return jsonify({'success': False, 'error': 'Message ID is required'})
+
+        if not show_value:
+            ytcm_hidden_msg_ids.add(message_id)
         
         # Find the message with the given ID
         message_found = False
@@ -317,6 +340,8 @@ def ytcm_toggle_message_visibility():
                     logger.info(f"Message visibility changed: {msg.id} - show: {show_value}")
                 break
         
+        ytcm_chat_messages = [p for p in ytcm_chat_messages if p.id not in ytcm_hidden_msg_ids and p.show]
+
         if not message_found:
             return jsonify({'success': False, 'error': 'Message not found'})
         
@@ -329,7 +354,7 @@ def ytcm_toggle_message_visibility():
 
 @app.route('/ytcm_get_messages')
 def ytcm_get_messages():
-    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_chat_messages, ytcm_last_live_chat_id
+    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_chat_messages, ytcm_last_live_chat_id, logger
     
     try:
         if not ytcm_youtube_chat_reader or not ytcm_openai_service:
@@ -348,14 +373,26 @@ def ytcm_get_messages():
             ytcm_chat_messages = []
             ytcm_clear_audio_files()
             if YTCM_TRACE_MODE:
-                logger.info(f"Live chat ID changed: {live_chat_id}")
+                try:
+                    logger.info(f"Live chat ID changed: {live_chat_id}")
+                except (OSError, IOError) as e:
+                    # Handle stale file handle errors during logging
+                    print(f"Logging error (handled): {str(e)}")
+                    # Attempt to reset logger handlers
+                    logger = setup_logger()
                 
         for msg in new_messages:
-            # Verify that the message has at least 5 words
+            # Verify that the message has at least minimum words
             words = msg['text'].split()
             if len(words) >= YTCM_MIN_MESSAGE_WORDS:
                 if YTCM_TRACE_MODE:
-                    logger.info(f"New message received: {msg['author']} - {msg['text']}")
+                    try:
+                        logger.info(f"New message received: {msg['author']} - {msg['text']}")
+                    except (OSError, IOError) as e:
+                        # Handle stale file handle errors during logging
+                        print(f"Logging error (handled): {str(e)}")
+                        # Attempt to reset logger handlers
+                        logger = setup_logger()
                 
                 # Verify if the message is a question via OpenAI
                 is_question = (not YTCM_QUESTIONS_ONLY) or ytcm_openai_service.is_question(msg['text'])
@@ -367,10 +404,20 @@ def ytcm_get_messages():
                         msg_text = ytcm_openai_service.correct_text(msg_text)
                     # Create a new custom message
                     chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']), msg['text'])
+                    if chat_msg.id in ytcm_hidden_msg_ids:
+                        chat_msg.show = False
                     if not ytcm_find_message(chat_msg):
-                        ytcm_chat_messages.append(chat_msg)
+                        if chat_msg.show:
+                            ytcm_chat_messages.append(chat_msg)
+                        ytcm_chat_messages = [p for p in ytcm_chat_messages if p.id not in ytcm_hidden_msg_ids and p.show]
                         if YTCM_TRACE_MODE:
-                            logger.info(f"Message added to the list: {chat_msg}")
+                            try:
+                                logger.info(f"Message added to the list: {chat_msg}")
+                            except (OSError, IOError) as e:
+                                # Handle stale file handle errors during logging
+                                print(f"Logging error (handled): {str(e)}")
+                                # Attempt to reset logger handlers
+                                logger = setup_logger()
         
         # Format messages for the response
         formatted_messages = [{
@@ -385,8 +432,15 @@ def ytcm_get_messages():
         return jsonify({'success': True, 'messages': formatted_messages})
     
     except Exception as e:
-        if YTCM_DEBUG_MODE:
-            logger.error(f"Error reading messages: {str(e)}")
+        try:
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error reading messages: {str(e)}")
+        except (OSError, IOError) as log_err:
+            # Handle stale file handle errors during error logging
+            print(f"Logging error (handled): {str(log_err)}")
+            # Attempt to reset logger handlers
+            logger = setup_logger()
+            
         return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':

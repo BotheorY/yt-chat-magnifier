@@ -1,5 +1,6 @@
 let lastNMessages = 0;
 let preventSingleClick = false;
+let pollingInterval;
 
 $(document).ready(function() {
 
@@ -94,9 +95,6 @@ $(document).ready(function() {
         });
     });
     
-    // Variable for polling interval
-    let pollingInterval;
-    
     // Function to start message polling
     function startMessagePolling() {
         // Clear any previous intervals
@@ -148,7 +146,7 @@ $(document).ready(function() {
         // Add messages
         messages.forEach(function(msg) {
             
-            if (msg.show) {
+            if (msg.show && (!(msg.show == 'false')) && (!(msg.show == 'False'))) {
                 const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
                 // Set the message ID as a data attribute
                 listItem.attr('data-id', msg.id);
@@ -274,11 +272,10 @@ $(document).ready(function() {
     if (isConnected) {
         startMessagePolling();
     }
-});
+// ================================================
+// ********** Message overlay management **********
+// ================================================
 
-
-// Message overlay management
-$(document).ready(function() {
     // Function to show the overlay with the message
     window.showMessageOverlay = function(author, text, element) {
         // Don't show overlay if double click was detected
@@ -407,5 +404,5 @@ $(document).ready(function() {
         // Add the player at the beginning of the footer
         $('.message-overlay-footer').prepend(audioHtml);
     }
-});
 
+});

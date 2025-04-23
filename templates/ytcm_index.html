@@ -24,7 +24,7 @@
                     <div class="card-body">
                         <div id="connection-controls" class="mb-4 text-center">
                             {% if connected %}
-                                <button id="disconnect-btn" class="btn btn-lg disconnect-btn text-white">DISCONNECT FROM YOUTUBE</button>
+                                <button id="disconnect-btn" class="btn btn-lg disconnect-btn text-white">DISCONNECT FROM {{ channel_name }}</button>
                             {% else %}
                                 <button id="connect-btn" class="btn btn-lg connect-btn text-white">CONNECT TO YOUTUBE</button>
                             {% endif %}
@@ -99,7 +99,7 @@
     
     <!-- Custom JS -->
     <script src="/static/js/yt-emoji-parser.js"></script>
-    <script src="/static/js/yt-chat-magnifier.js"></script>
+    <script src="/static/js/yt-chat-magnifier.js?ver=1"></script>
     <script src="/static/js/ytcm-style-loader.js"></script>
     
     <!-- Reference to external JavaScript file -->    

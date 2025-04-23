@@ -255,3 +255,35 @@ class YouTubeChatReader:
             if YTCM_DEBUG_MODE:
                 logger.error(f"Error while retrieving live title: {str(e)}")
             return '...'
+
+    def get_channel_name(self):
+        """Gets the name of the authenticated channel"""
+        
+        if not self.connected:
+            if YTCM_DEBUG_MODE:
+                logger.error("Not connected to YouTube")
+            return '...'
+
+        try:
+            # Get the authenticated channel's information
+            request = self.youtube.channels().list(
+                part="snippet",
+                mine=True
+            )
+            response = request.execute()
+
+            # Get the channel name
+            items = response.get('items', [])
+            if items:
+                return items[0]['snippet']['title']
+
+            return '...'
+
+        except HttpError as e:
+            if YTCM_DEBUG_MODE:
+                logger.error(f"HTTP error while retrieving channel name: {str(e)}")
+            return '...'
+        except Exception as e:
+            if YTCM_DEBUG_MODE:
+                logger.error(f"Error while retrieving channel name: {str(e)}")
+            return '...'
