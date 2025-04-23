@@ -3,7 +3,6 @@ import os
 import json
 import logging
 import datetime
-import uuid
 from logging.handlers import RotatingFileHandler
 from ytcm_youtube_chat_reader import YouTubeChatReader
 from ytcm_openai_service import OpenAIService
@@ -12,6 +11,7 @@ from ytcm_consts import *
 from googleapiclient.discovery import build
 from urllib.parse import urlparse
 import hashlib
+from ytcm_messages_manager import ytcm_ChatMessagesManager, ytcm_HiddenMessagesManager
 
 app = Flask(__name__)
 
@@ -37,7 +37,7 @@ def setup_logger():
     
     try:
         # Handler for log file with error handling
-        log_file_path = os.path.join(logs_dir, 'yt-chat-magnifier.log')
+        log_file_path = os.path.join(logs_dir, 'ycm-chat-magnifier.log')
         file_handler = RotatingFileHandler(
             log_file_path, 
             maxBytes=10485760, 
@@ -80,11 +80,15 @@ class ytcm_ChatMessageCustom:
     def __str__(self):
         return f"[{self.author}] - {self.raw_text}"
 
-ytcm_last_live_chat_id = None
+    def __repr__(self):
+        return f"ytcm_ChatMessageCustom(id='{self.id}', author='{self.author}', raw_text={self.raw_text})"
 
-# List to store chat messages
-ytcm_chat_messages = []
-ytcm_hidden_msg_ids: set = set()
+ytcm_last_live_chat_id = None
+ytcm_live_chat_first_change = True
+
+# Inizializzazione dei gestori dei messaggi
+ytcm_chat_messages_manager = ytcm_ChatMessagesManager()
+ytcm_hidden_messages_manager = ytcm_HiddenMessagesManager()
 
 # Service instances
 ytcm_youtube_chat_reader = None
@@ -92,13 +96,11 @@ ytcm_openai_service = not ytcm_ai_needed
 ytcm_polly_service = None
 
 def ytcm_find_message(message: ytcm_ChatMessageCustom) -> bool:
-    global ytcm_chat_messages
-    for msg in ytcm_chat_messages:
-        if str(msg) == str(message):
-            if YTCM_TRACE_MODE:
-                logger.info(f"Message found in the list: {msg}")
-            return True
-    return False
+    global ytcm_chat_messages_manager
+    found = ytcm_chat_messages_manager.find_message(message)
+    if found and YTCM_TRACE_MODE:
+        logger.info(f"Message found in the list: {message}")
+    return found
 
 # Loading configurations
 def ytcm_load_config(config_file):
@@ -316,34 +318,31 @@ def ytcm_disconnect():
 
 @app.route('/ytcm_toggle_message_visibility', methods=['POST'])
 def ytcm_toggle_message_visibility():
-    global ytcm_chat_messages, ytcm_hidden_msg_ids
+    global ytcm_chat_messages_manager, ytcm_hidden_messages_manager
     
     try:
         # Get message ID and new show value from request
         data = request.get_json()
         message_id = data.get('id')
-        show_value = data.get('show', True)
+        show_value = data.get('show', False)
         
         if not message_id:
             return jsonify({'success': False, 'error': 'Message ID is required'})
 
+        # Aggiorna la visibilità nel gestore degli ID nascosti
         if not show_value:
-            ytcm_hidden_msg_ids.add(message_id)
+            ytcm_hidden_messages_manager.add_hidden_id(message_id)
+#        else:
+#            ytcm_hidden_messages_manager.remove_hidden_id(message_id)
         
-        # Find the message with the given ID
-        message_found = False
-        for msg in ytcm_chat_messages:
-            if msg.id == message_id:
-                msg.show = show_value
-                message_found = True
-                if YTCM_TRACE_MODE:
-                    logger.info(f"Message visibility changed: {msg.id} - show: {show_value}")
-                break
-        
-        ytcm_chat_messages = [p for p in ytcm_chat_messages if p.id not in ytcm_hidden_msg_ids and p.show]
+            # Aggiorna la visibilità nel gestore dei messaggi
+            message_found = ytcm_chat_messages_manager.update_message_visibility(message_id, show_value)
+            
+            if YTCM_TRACE_MODE and message_found:
+                logger.info(f"Message visibility changed: {message_id} - show: {show_value}")
 
-        if not message_found:
-            return jsonify({'success': False, 'error': 'Message not found'})
+            if not message_found:
+                return jsonify({'success': False, 'error': 'Message not found'})
         
         return jsonify({'success': True})
     
@@ -354,7 +353,7 @@ def ytcm_toggle_message_visibility():
 
 @app.route('/ytcm_get_messages')
 def ytcm_get_messages():
-    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_chat_messages, ytcm_last_live_chat_id, logger
+    global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_chat_messages_manager, ytcm_hidden_messages_manager, ytcm_last_live_chat_id, logger, ytcm_live_chat_first_change
     
     try:
         if not ytcm_youtube_chat_reader or not ytcm_openai_service:
@@ -363,15 +362,18 @@ def ytcm_get_messages():
         # Reading new messages from YouTube chat
         new_messages = ytcm_youtube_chat_reader.get_new_messages()
         if new_messages == False:
-            ytcm_chat_messages = []
+            ytcm_chat_messages_manager.clear_messages()
             ytcm_clear_audio_files()
             return jsonify({'success': True, 'messages': [], 'error': 'No live stream found on the channel'})
             
         live_chat_id = ytcm_youtube_chat_reader.live_chat_id
         if live_chat_id != ytcm_last_live_chat_id:
             ytcm_last_live_chat_id = live_chat_id
-            ytcm_chat_messages = []
+            ytcm_chat_messages_manager.clear_messages()            
+            ytcm_hidden_messages_manager.clear_hidden_ids(not ytcm_live_chat_first_change)
             ytcm_clear_audio_files()
+            ytcm_live_chat_first_change = False
+
             if YTCM_TRACE_MODE:
                 try:
                     logger.info(f"Live chat ID changed: {live_chat_id}")
@@ -404,20 +406,27 @@ def ytcm_get_messages():
                         msg_text = ytcm_openai_service.correct_text(msg_text)
                     # Create a new custom message
                     chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']), msg['text'])
-                    if chat_msg.id in ytcm_hidden_msg_ids:
+                    
+                    # Verifica se il messaggio è nascosto
+                    if ytcm_hidden_messages_manager.is_hidden(chat_msg.id):
                         chat_msg.show = False
-                    if not ytcm_find_message(chat_msg):
+                    
+                    # Aggiungi il messaggio se non è già presente
+                    if ytcm_chat_messages_manager.find_message(chat_msg):
+                        if not chat_msg.show:
+                            ytcm_chat_messages_manager.update_message_visibility(chat_msg.id, False)
+                    else:
                         if chat_msg.show:
-                            ytcm_chat_messages.append(chat_msg)
-                        ytcm_chat_messages = [p for p in ytcm_chat_messages if p.id not in ytcm_hidden_msg_ids and p.show]
-                        if YTCM_TRACE_MODE:
-                            try:
-                                logger.info(f"Message added to the list: {chat_msg}")
-                            except (OSError, IOError) as e:
-                                # Handle stale file handle errors during logging
-                                print(f"Logging error (handled): {str(e)}")
-                                # Attempt to reset logger handlers
-                                logger = setup_logger()
+                            ytcm_chat_messages_manager.add_message(chat_msg)
+                        
+                            if YTCM_TRACE_MODE:
+                                try:
+                                    logger.info(f"Message added to the list: {chat_msg}")
+                                except (OSError, IOError) as e:
+                                    # Handle stale file handle errors during logging
+                                    print(f"Logging error (handled): {str(e)}")
+                                    # Attempt to reset logger handlers
+                                    logger = setup_logger()
         
         # Format messages for the response
         formatted_messages = [{
@@ -427,7 +436,7 @@ def ytcm_get_messages():
             'datetime': msg.datetime.strftime('%Y-%m-%d %H:%M:%S'),
             'is_male': msg.is_male,
             'show': msg.show
-        } for msg in ytcm_chat_messages]
+        } for msg in ytcm_chat_messages_manager.get_messages() if msg.show]
         
         return jsonify({'success': True, 'messages': formatted_messages})
     

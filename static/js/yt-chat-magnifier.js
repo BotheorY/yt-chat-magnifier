@@ -165,10 +165,14 @@ $(document).ready(function() {
                 toggleBtn.addClass(msg.show ? 'btn-outline-danger' : 'btn-outline-success');
                 toggleBtn.html(msg.show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>');
                 toggleBtn.attr('title', msg.show ? 'Hide message' : 'Show message');
-                toggleBtn.click(function(e) {
+                // Make sure the click event doesn't propagate to the parent element in any case
+                toggleBtn.on('click mousedown mouseup', function(e) {
                     e.preventDefault();
                     e.stopPropagation(); // Prevent triggering the list item click
-                    toggleMessageVisibility(msg.id, !msg.show);
+                    if (e.type === 'click') {
+                        toggleMessageVisibility(msg.id, !msg.show);
+                    }
+                    return false; // Additional security to stop propagation
                 });
                                 
                 // Add elements to list item
@@ -246,6 +250,13 @@ $(document).ready(function() {
     
     // Function to toggle message visibility
     function toggleMessageVisibility(messageId, showValue) {
+        // If showValue is false, immediately remove the element from the list
+        if (!showValue) {
+            // Find and remove the element with the corresponding ID
+            $(`#message-list li[data-id="${messageId}"]`).remove();
+        }
+        
+        // Send the request to the server anyway to update the status
         $.ajax({
             url: '/ytcm_toggle_message_visibility',
             type: 'POST',
@@ -256,14 +267,20 @@ $(document).ready(function() {
             }),
             success: function(response) {
                 if (response.success) {
-                    // Refresh messages to update UI
-                    fetchMessages();
+                    // Se showValue è true, aggiorna la lista per mostrare il messaggio
+                    if (showValue) {
+                        fetchMessages();
+                    }
                 } else {
                     console.error('Error toggling message visibility:', response.error);
+                    // In caso di errore, aggiorna comunque la lista per ripristinare lo stato corretto
+                    fetchMessages();
                 }
             },
             error: function() {
                 console.error('Error communicating with server');
+                // In caso di errore, aggiorna la lista per ripristinare lo stato corretto
+                fetchMessages();
             }
         });
     }
