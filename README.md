@@ -7,7 +7,7 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
 - **Real-time Chat Monitoring**: Connection to YouTube APIs to read chat in real-time from any livestream
 - **Interactive Message Display**: Messages shown in a real-time updated list with auto-scrolling
 - **Message Management**: Manually remove messages from the list
-- **Smart Filtering**: Show only messages with questions and/or containing a minimum number of words, hide duplicates
+- **Smart Filtering**: Show only messages with questions and/or containing a minimum number of words, hide duplicates and channel owner filtering (option to ignore messages from the YouTube channel owner)
 - **AI Moderation**: Automatic exclusion of spam, offensive content, or irrelevant messages through AI moderation
 - **Accessibility Features**:
   - Zoom on message text by increasing text size
@@ -82,6 +82,7 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
 5. Configure filters and display options according to your preferences:
    - Set minimum word count for messages
    - Enable/disable question detection
+   - Enable/disable channel owner message filtering
    - Enable/disable spelling correction
    - Enable/disable translation to a chosen language
    - Enable/disable AI moderation
@@ -106,13 +107,38 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
 
 ## Configuration Options
 
-The application can be configured through environment variables and/or by editing the the costants in ytcm_consts.py file:
+The application can be configured through environment variables and/or by editing the constants in ytcm_consts.py file:
 
+### General Configuration
 - `FLASK_ENV`: Set to `development` for debug mode or `production` for production mode
 - `FLASK_PORT`: Change the default port (5000) if needed
+- `YTCM_LAYOUT_STYLE`: UI theme ('standard', 'dark', or 'high-contrast')
+
+### Logging Configuration
 - `YTCM_DEBUG_MODE`: Enable/disable error logging (true/false)
 - `YTCM_TRACE_MODE`: Enable/disable operation tracing (true/false)
-- `YTCM_TTS_ENABLED`: Enable/disable text-to-speech functionality by default
+- `YTCM_LOG_FILE_MAX_SIZE`: Maximum log file size in bytes (default: 10MB)
+- `YTCM_LOG_FILE_BACKUP_COUNT`: Number of log file backups to keep
+
+### Message Filtering Configuration
+- `YTCM_IGNORE_CHANNEL_OWNER_MESSAGES`: Ignore messages from the channel owner (true/false)
+- `YTCM_MIN_MESSAGE_WORDS`: Minimum number of words for a message to be displayed
+- `YTCM_APPLY_MODERATION`: Enable/disable AI-based message moderation
+- `YTCM_QUESTIONS_ONLY`: Show only messages that contain questions
+
+### Message Processing Configuration
+- `YTCM_RETRIEVE_MSG_AUTHOR_GENDER`: Detect message author gender for TTS voice selection
+- `YTCM_APPLY_SPELLING_CORRECTION`: Enable/disable automatic spelling correction
+- `YTCM_MSG_FORCED_LANG`: Force translation to a specific language (e.g., 'Italian', or None for no translation)
+
+### Text-to-Speech Configuration
+- `YTCM_MALE_TTS_VOICE`: AWS Polly voice for male authors (e.g., 'Giorgio')
+- `YTCM_FEMALE_TTS_VOICE`: AWS Polly voice for female authors (e.g., 'Bianca')
+- `YTCM_TTS_AUDIO_FILES_DIR`: Directory to store TTS audio files
+
+### API Configuration
+- `YTCM_GPT_MODEL`: OpenAI GPT model to use (e.g., 'gpt-4.1')
+- `YTCM_POLLING_INTERVAL_MS`: Polling interval in milliseconds for fetching new chat messages
 
 ## Logging Configuration
 

@@ -1,10 +1,7 @@
 import os
 import json
 import datetime
-import logging
-from ytcm_consts import *
-
-logger = logging.getLogger('chat_magnifier')
+from ytcm_utils import *
 
 class ytcm_ChatMessagesManager:
     """Class for managing chat messages, saving them in a JSON file."""
@@ -15,8 +12,8 @@ class ytcm_ChatMessagesManager:
         Args:
             file_path (str): Path of the JSON file to save messages.
         """
-        if YTCM_TRACE_MODE:
-            logger.info(f"Initializing ytcm_ChatMessagesManager with file: {file_path}")
+        
+        info_log(f"Initializing ytcm_ChatMessagesManager with file: {file_path}")
 
         self.messages = []
         self.file_path = file_path
@@ -26,13 +23,11 @@ class ytcm_ChatMessagesManager:
     def _ensure_directory_exists(self):
         """Ensure that the directory for the JSON file exists."""
         directory = os.path.dirname(os.path.abspath(self.file_path))
-        if not os.path.exists(directory):
-            if YTCM_TRACE_MODE:
-                logger.info(f"Creating directory: {directory}")
+        if not os.path.exists(directory):            
+            info_log(f"Creating directory: {directory}")
             os.makedirs(directory)
         else:
-            if YTCM_TRACE_MODE:
-                logger.info(f"Directory already exists: {directory}")
+            info_log(f"Directory already exists: {directory}")
     
     def _load_messages(self):
         """Load messages from the JSON file if it exists."""
@@ -50,12 +45,10 @@ class ytcm_ChatMessagesManager:
                                 # Convert the datetime string to a datetime object
                                 value = datetime.datetime.fromisoformat(value)
                             setattr(msg, key, value)
-                        self.messages.append(msg)
-            if YTCM_TRACE_MODE:
-                logger.info(f"Loaded {len(self.messages)} messages from file {self.file_path}")
+                        self.messages.append(msg)            
+            info_log(f"Loaded {len(self.messages)} messages from file {self.file_path}")
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error loading messages: {str(e)}")
+            err_log(f"Error loading messages: {str(e)}")
             self.messages = []
     
     def _save_messages(self):
@@ -74,11 +67,9 @@ class ytcm_ChatMessagesManager:
             
             with open(self.file_path, 'w', encoding='utf-8') as f:
                 json.dump(serializable_messages, f, ensure_ascii=False, indent=2)
-            if YTCM_TRACE_MODE:
-                logger.info(f"Saved {len(serializable_messages)} messages to file {self.file_path}")
+            info_log(f"Saved {len(serializable_messages)} messages to file {self.file_path}")
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error saving messages: {str(e)}")
+            err_log(f"Error saving messages: {str(e)}")
     
     def add_message(self, message):
         """Add a message to the list and save.
@@ -91,11 +82,9 @@ class ytcm_ChatMessagesManager:
         if (not eq_ids) or (len(eq_ids) == 0):
             self.messages.append(message)
             self._save_messages()
-            if YTCM_TRACE_MODE:
-                logger.info(f"Message added with ID: {message.id}")
+            info_log(f"Message added with ID: {message.id}")
         else:
-            if YTCM_TRACE_MODE:
-                logger.info(f"Message already exists, not added: {message.id}")
+            info_log(f"Message already exists, not added: {message.id}")
     
     def remove_message(self, message_id):
         """Remove a message from the list and save.
@@ -111,10 +100,9 @@ class ytcm_ChatMessagesManager:
             if msg.id == message_id:
                 del self.messages[i]
                 self._save_messages()
-                if YTCM_TRACE_MODE:
-                    logger.info(f"Message removed with ID: {message_id}")
+                info_log(f"Message removed with ID: {message_id}")
                 return True
-        logger.debug(f"Attempt to remove message not found with ID: {message_id}")
+        err_log(f"Attempt to remove message not found with ID: {message_id}")
         return False
     
     def get_messages(self):
@@ -131,8 +119,7 @@ class ytcm_ChatMessagesManager:
         count = len(self.messages)
         self.messages = []
         self._save_messages()
-        if YTCM_TRACE_MODE:
-            logger.info(f"Deleted {count} messages from the list")
+        info_log(f"Deleted {count} messages from the list")
     
     def find_message(self, message):
         """Check if a message is already in the list.
@@ -164,11 +151,9 @@ class ytcm_ChatMessagesManager:
             if msg.id == message_id:
                 msg.show = show_value
                 self._save_messages()
-                if YTCM_TRACE_MODE:
-                    logger.info(f"Updated message visibility {message_id} to {show_value}")
+                info_log(f"Updated message visibility {message_id} to {show_value}")
                 return True
-        if YTCM_TRACE_MODE:
-            logger.info(f"Attempt to update visibility for message not found: {message_id}")
+        info_log(f"Attempt to update visibility for message not found: {message_id}")
         return False
 
 
@@ -183,8 +168,7 @@ class ytcm_HiddenMessagesManager:
         """
         self.hidden_msg_ids = set()
         self.file_path = file_path
-        if YTCM_TRACE_MODE:
-            logger.info(f"Initializing ytcm_HiddenMessagesManager with file: {file_path}")
+        info_log(f"Initializing ytcm_HiddenMessagesManager with file: {file_path}")
         self._ensure_directory_exists()
         self._load_hidden_ids()
     
@@ -192,12 +176,10 @@ class ytcm_HiddenMessagesManager:
         """Ensure that the directory for the JSON file exists."""
         directory = os.path.dirname(os.path.abspath(self.file_path))
         if not os.path.exists(directory):
-            if YTCM_TRACE_MODE:
-                logger.info(f"Creating directory: {directory}")
+            info_log(f"Creating directory: {directory}")
             os.makedirs(directory)
         else:
-            if YTCM_TRACE_MODE:
-                logger.info(f"Directory already exists: {directory}")
+            info_log(f"Directory already exists: {directory}")
     
     def _load_hidden_ids(self):
         """Load hidden message IDs from the JSON file if it exists."""
@@ -205,11 +187,9 @@ class ytcm_HiddenMessagesManager:
             if os.path.exists(self.file_path):
                 with open(self.file_path, 'r', encoding='utf-8') as f:
                     self.hidden_msg_ids = set(json.load(f))
-                if YTCM_TRACE_MODE:
-                    logger.info(f"Loaded {len(self.hidden_msg_ids)} hidden IDs from file {self.file_path}")
+                info_log(f"Loaded {len(self.hidden_msg_ids)} hidden IDs from file {self.file_path}")
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error loading hidden IDs: {str(e)}")
+            err_log(f"Error loading hidden IDs: {str(e)}")
             self.hidden_msg_ids = set()
     
     def _save_hidden_ids(self):
@@ -217,11 +197,9 @@ class ytcm_HiddenMessagesManager:
         try:
             with open(self.file_path, 'w', encoding='utf-8') as f:
                 json.dump(list(self.hidden_msg_ids), f, ensure_ascii=False, indent=2)
-            if YTCM_TRACE_MODE:
-                logger.info(f"Saved {len(self.hidden_msg_ids)} hidden IDs to file {self.file_path}")
+            info_log(f"Saved {len(self.hidden_msg_ids)} hidden IDs to file {self.file_path}")
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error saving hidden IDs: {str(e)}")
+            err_log(f"Error saving hidden IDs: {str(e)}")
     
     def add_hidden_id(self, message_id):
         """Add an ID to the list of hidden IDs and save.
@@ -232,8 +210,7 @@ class ytcm_HiddenMessagesManager:
         self._load_hidden_ids()
         self.hidden_msg_ids.add(message_id)
         self._save_hidden_ids()
-        if YTCM_TRACE_MODE:
-            logger.info(f"Added ID {message_id} to the hidden IDs list")
+        info_log(f"Added ID {message_id} to the hidden IDs list")
     
     def remove_hidden_id(self, message_id):
         """Remove an ID from the list of hidden IDs and save.
@@ -248,11 +225,9 @@ class ytcm_HiddenMessagesManager:
         if message_id in self.hidden_msg_ids:
             self.hidden_msg_ids.remove(message_id)
             self._save_hidden_ids()
-            if YTCM_TRACE_MODE:
-                logger.info(f"Removed ID {message_id} from the hidden IDs list")
+            info_log(f"Removed ID {message_id} from the hidden IDs list")
             return True
-        if YTCM_TRACE_MODE:
-            logger.info(f"Attempt to remove ID not found: {message_id}")
+        info_log(f"Attempt to remove ID not found: {message_id}")
         return False
     
     def is_hidden(self, message_id):
@@ -283,9 +258,7 @@ class ytcm_HiddenMessagesManager:
         if force or (count > 1000):
             self.hidden_msg_ids = set()
             self._save_hidden_ids()
-            if YTCM_TRACE_MODE:
-                logger.info(f"Deleted {count} hidden IDs")
+            info_log(f"Deleted {count} hidden IDs")
         else:
-            if YTCM_TRACE_MODE:
-                logger.info(f"No deletion of hidden IDs (count={count}, force={force})")
+            info_log(f"No deletion of hidden IDs (count={count}, force={force})")
             self._load_hidden_ids()

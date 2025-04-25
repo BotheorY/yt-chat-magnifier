@@ -1,16 +1,16 @@
 import os
-import logging
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.auth.exceptions import RefreshError
-from ytcm_consts import *
 import json
 from flask import request
+from ytcm_consts import *
+from ytcm_utils import *
 
-logger = logging.getLogger('chat_magnifier')
+# logger = logging.getLogger('chat_magnifier')
 
 class YouTubeChatReader:
     def __init__(self):
@@ -30,16 +30,14 @@ class YouTubeChatReader:
             credentials, resumed = self._get_credentials(resume_only)
 
             if not credentials:
-                if YTCM_DEBUG_MODE:
-                    if resume_only:
-                        logger.error("Failed to authenticate cause no credentials from file")
-                    else:
-                        logger.error("Failed to authenticate with OAuth 2.0")
+                if resume_only:
+                    err_log("Failed to authenticate cause no credentials from file")
+                else:
+                    err_log("Failed to authenticate with OAuth 2.0")
                 return False
             
             if isinstance(credentials, str):
-                if YTCM_TRACE_MODE:
-                    logger.info("Redirected to YouTube login page.")
+                err_log("Redirected to YouTube login page.")
                 return credentials
 
             # Create YouTube service
@@ -49,12 +47,10 @@ class YouTubeChatReader:
             return 'resumed' if resumed else True
         
         except HttpError as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"HTTP error during YouTube connection: {str(e)}")
+            err_log(f"HTTP error during YouTube connection: {str(e)}")
             return False
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error during YouTube connection: {str(e)}")
+            err_log(f"Error during YouTube connection: {str(e)}")
             return False
     
     def _get_credentials(self, resume_only=False):
@@ -68,8 +64,7 @@ class YouTubeChatReader:
                 credentials = Credentials.from_authorized_user_info(
                     json.loads(open(self.token_file).read()), self.scopes)
             except Exception as e:
-                if YTCM_DEBUG_MODE:
-                    logger.error(f"Error loading token: {str(e)}")
+                err_log(f"Error loading token: {str(e)}")
         
         # If there are no valid credentials, run the authentication flow
         if (not credentials) or (not credentials.valid):
@@ -77,8 +72,7 @@ class YouTubeChatReader:
                 try:
                     credentials.refresh(Request())
                 except RefreshError as e:
-                    if YTCM_DEBUG_MODE:
-                        logger.error(f"Error refreshing token: {str(e)}")
+                    err_log(f"Error refreshing token: {str(e)}")
                     credentials = None
             
             if (not resume_only) and (not credentials):
@@ -89,7 +83,7 @@ class YouTubeChatReader:
                     auth_url, state = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
                     return auth_url, resumed
                 except Exception as e:
-                    logger.error(f"Errore durante il flusso OAuth Authorization Code Grant: {e}", exc_info=True)
+                    err_log(f"Errore durante il flusso OAuth Authorization Code Grant: {e}")
                     credentials = None
             
             if credentials:
@@ -134,27 +128,23 @@ class YouTubeChatReader:
             return None
         
         except HttpError as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"HTTP error while retrieving live chat ID: {str(e)}")
+            err_log(f"HTTP error while retrieving live chat ID: {str(e)}")
             return None
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error while retrieving live chat ID: {str(e)}")
+            err_log(f"Error while retrieving live chat ID: {str(e)}")
             return None
     
     def get_new_messages(self):
         """Gets new messages from the live chat"""
 
         if not self.connected:
-            if YTCM_DEBUG_MODE:
-                logger.error("Not connected to YouTube")
+            err_log("Not connected to YouTube")
             return []
 
         # Get the live chat ID
         self.live_chat_id = self._get_live_chat_id()            
         if not self.live_chat_id:
-            if YTCM_DEBUG_MODE:
-                logger.error("No live stream found on the channel")
+            err_log("No live stream found on the channel")
             return False
         
         try:
@@ -182,12 +172,10 @@ class YouTubeChatReader:
             return messages
         
         except HttpError as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"HTTP error during message retrieval: {str(e)}")
+            err_log(f"HTTP error during message retrieval: {str(e)}")
             return []
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error during message retrieval: {str(e)}")
+            err_log(f"Error during message retrieval: {str(e)}")
             return []
     
     def disconnect(self):
@@ -200,23 +188,19 @@ class YouTubeChatReader:
         if os.path.exists(self.token_file):
             try:
                 os.remove(self.token_file)
-                if YTCM_TRACE_MODE:
-                    logger.info(f"Removed token file: {self.token_file}")
+                info_log(f"Removed token file: {self.token_file}")
             except Exception as e:
-                if YTCM_DEBUG_MODE:
-                    logger.error(f"Error removing token file: {str(e)}")
-
-        if YTCM_TRACE_MODE:
-            logger.info("Disconnected from YouTube")
+                err_log(f"Error removing token file: {str(e)}")
+        
+        info_log("Disconnected from YouTube")
         return True
 
     def get_live_title(self):
         """Gets the title of the current live stream"""
 
         if not self.connected:
-            if YTCM_DEBUG_MODE:
-                logger.error("Not connected to YouTube")
-            return '...'
+            err_log("Not connected to YouTube")
+            return '[NO LIVE STREAM IN PROGRESS]'
 
         try:
             # Get the list of active live broadcasts
@@ -245,23 +229,20 @@ class YouTubeChatReader:
                 if items[0]['snippet']['isDefaultStream']:
                     return items[0]['snippet']['title']
 
-            return '...'
+            return '[NO LIVE STREAM IN PROGRESS]'
 
         except HttpError as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"HTTP error while retrieving live title: {str(e)}")
-            return '...'
+            err_log(f"HTTP error while retrieving live title: {str(e)}")
+            return '[NO LIVE STREAM IN PROGRESS]'
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error while retrieving live title: {str(e)}")
-            return '...'
+            err_log(f"Error while retrieving live title: {str(e)}")
+            return '[NO LIVE STREAM IN PROGRESS]'
 
     def get_channel_name(self):
         """Gets the name of the authenticated channel"""
-        
-        if not self.connected:
-            if YTCM_DEBUG_MODE:
-                logger.error("Not connected to YouTube")
+
+        if not self.connected:            
+            err_log("Not connected to YouTube")
             return '...'
 
         try:
@@ -280,10 +261,8 @@ class YouTubeChatReader:
             return '...'
 
         except HttpError as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"HTTP error while retrieving channel name: {str(e)}")
+            err_log(f"HTTP error while retrieving channel name: {str(e)}")
             return '...'
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error while retrieving channel name: {str(e)}")
+            err_log(f"Error while retrieving channel name: {str(e)}")
             return '...'

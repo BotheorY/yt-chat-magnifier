@@ -1,12 +1,11 @@
 import boto3
 import os
 import json
-import logging
 from ytcm_consts import *
+from ytcm_utils import *
 
 class PollyService:
     def __init__(self, credentials_file):
-        self.logger = logging.getLogger('chat_magnifier')
         self.polly_client = None
         self.initialized = False
         
@@ -24,14 +23,11 @@ class PollyService:
                     region_name=credentials['region_name']
                 )
                 self.initialized = True
-                if YTCM_TRACE_MODE:
-                    self.logger.info("AWS Polly service initialized successfully")
+                info_log("AWS Polly service initialized successfully")
             else:
-                if YTCM_DEBUG_MODE:
-                    self.logger.error(f"AWS Polly credentials file not found: {credentials_file}")
+                err_log(f"AWS Polly credentials file not found: {credentials_file}")
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                self.logger.error(f"Error initializing AWS Polly service: {str(e)}")
+            err_log(f"Error initializing AWS Polly service: {str(e)}")
     
     def is_available(self):
         """Checks if the Polly service is available"""
@@ -47,8 +43,7 @@ class PollyService:
     def generate_audio(self, text, message_id, is_male=True):
         """Generates an MP3 audio file using AWS Polly"""
         if not self.is_available():
-            if YTCM_DEBUG_MODE:
-                self.logger.error("AWS Polly service not available")
+            err_log("AWS Polly service not available")
             return False
         try:
             # Cleans the text by removing emoji codes
@@ -56,8 +51,7 @@ class PollyService:
             # Determines the voice to use based on gender
             voice_id = self._get_voice_id(is_male)
             if not voice_id:
-                if YTCM_DEBUG_MODE:
-                    self.logger.error("No voice configured for TTS")
+                err_log("No voice configured for TTS")
                 return False
             # Generates audio with Polly
             response = self.polly_client.synthesize_speech(
@@ -73,12 +67,10 @@ class PollyService:
             file_path = os.path.join(audio_file_dir_full_path, f"{message_id}.mp3")
             with open(file_path, 'wb') as f:
                 f.write(response['AudioStream'].read())
-            if YTCM_TRACE_MODE:
-                self.logger.info(f"Audio file generated successfully: {file_path}")
+            info_log(f"Audio file generated successfully: {file_path}")
             return True
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                self.logger.error(f"Error generating audio file: {str(e)}")
+            err_log(f"Error generating audio file: {str(e)}")
             return False
     
     def _get_voice_id(self, is_male):

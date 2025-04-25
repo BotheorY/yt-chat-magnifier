@@ -9,8 +9,15 @@ YTCM_POLLY_CONFIG_FILE =os.path.abspath(os.path.join(os.path.dirname(__file__), 
 # Logging configuration
 YTCM_DEBUG_MODE = True  # Enable/disable error logging
 YTCM_TRACE_MODE = True  # Enable/disable operation tracing
+YTCM_LOGGER_NAME = 'yt_chat_magnifier'  # Logger name
+YTCM_LOG_FILE_DIR = 'logs'  # Directory to store log files
+YTCM_LOG_FILE_NAME = 'yt-chat-magnifier.log'  # Log file name
+YTCM_LOG_FILE_MAX_SIZE = 10485760  # Maximum log file size in bytes (10MB)
+YTCM_LOG_FILE_BACKUP_COUNT = 10  # Number of log file backups to keep
+YTCM_ERR_LOG_EXTRA_INFO = True  # Include extra information in error logs
 
 # Messages filtering configuration
+YTCM_IGNORE_CHANNEL_OWNER_MESSAGES = True  # Ignore messages from channel owner
 YTCM_MIN_MESSAGE_WORDS = 3  # Minimum number of words in a message
 YTCM_APPLY_MODERATION = True  # Apply moderation to messages
 YTCM_QUESTIONS_ONLY = True  # Process only questions
@@ -29,6 +36,6 @@ YTCM_TTS_AUDIO_FILES_DIR = 'static/tmp/ytcm/'  # Directory to store TTS audio fi
 YTCM_GPT_MODEL = "gpt-4.1"  # GPT model to use
 
 # Polling configuration
-YTCM_POLLING_INTERVAL_MS = 30000  # Polling interval in milliseconds for fetching messages
+YTCM_POLLING_INTERVAL_MS = 10000  # Polling interval in milliseconds for fetching messages
 
 YTCM_LAYOUT_STYLE = 'dark'  # Avaiable layout style: standard, dark, high-contrast

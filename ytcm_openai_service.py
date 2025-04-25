@@ -1,9 +1,7 @@
-import logging
 import openai
 import re
 from ytcm_consts import *
-
-logger = logging.getLogger('chat_magnifier')
+from ytcm_utils import *
 
 class OpenAIService:
     def __init__(self, api_key):
@@ -64,14 +62,12 @@ class OpenAIService:
             # Extract the response
             answer = response.choices[0].message.content.strip().upper()
             
-            if YTCM_TRACE_MODE:
-                logger.info(f"OpenAI has determined that the message '{text}' is a question: {answer == 'YES'}")
+            info_log(f"OpenAI has determined that the message '{text}' is a question: {answer == 'YES'}")
             
             return answer == 'YES'
         
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error during message analysis with OpenAI: {str(e)}")
+            err_log(f"Error during message analysis with OpenAI: {str(e)}")
             # In case of error, we assume it's not a question
             return False
 
@@ -84,13 +80,11 @@ class OpenAIService:
             results = response.results[0]
             is_inappropriate = results.flagged
 
-            if YTCM_TRACE_MODE:
-                logger.info(f"OpenAI has determined that the message '{text}' is appropriate: {not is_inappropriate}")
+            info_log(f"OpenAI has determined that the message '{text}' is appropriate: {not is_inappropriate}")
 
             return not is_inappropriate
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error during message moderation with OpenAI: {str(e)}")
+            err_log(f"Error during message moderation with OpenAI: {str(e)}")
             return True
 
     def is_male_username(self, username):
@@ -147,14 +141,12 @@ class OpenAIService:
             # Extract the response
             answer = response.choices[0].message.content.strip().upper()
             
-            if YTCM_TRACE_MODE:
-                logger.info(f"OpenAI has determined that the username '{username}' belongs to a male user: {answer == 'YES'}")
+            info_log(f"OpenAI has determined that the username '{username}' belongs to a male user: {answer == 'YES'}")
             
             return answer == 'YES'
         
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error during username gender analysis with OpenAI: {str(e)}")
+            err_log(f"Error during username gender analysis with OpenAI: {str(e)}")
             # In case of error, we return False
             return False
             
@@ -237,13 +229,11 @@ class OpenAIService:
             for placeholder, emoticon_code in placeholder_map.items():
                 corrected_text = corrected_text.replace(placeholder, emoticon_code)
             
-            if YTCM_TRACE_MODE:
-                logger.info(f"OpenAI has corrected the text: '{text}' to '{corrected_text}'")
+            info_log(f"OpenAI has corrected the text: '{text}' to '{corrected_text}'")
             
             return corrected_text
         
         except Exception as e:
-            if YTCM_DEBUG_MODE:
-                logger.error(f"Error during text correction with OpenAI: {str(e)}")
+            err_log(f"Error during text correction with OpenAI: {str(e)}")
             # In case of error, return the original text
             return text

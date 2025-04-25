@@ -95,6 +95,11 @@ $(document).ready(function() {
         });
     });
     
+    // Function to update live title text
+    function updateLiveTitle(text) {
+        $('#live-title').text('(' + text + ')');
+    }
+    
     // Function to start message polling
     function startMessagePolling() {
         // Clear any previous intervals
@@ -145,97 +150,104 @@ $(document).ready(function() {
         
         // Add messages
         messages.forEach(function(msg) {
+
+            if (msg.live_title) {
+                updateLiveTitle(msg.live_title);
+
+console.log('Live title changed.', msg.live_title); // Debugging
+
+            } else {
             
-            if (msg.show && (!(msg.show == 'false')) && (!(msg.show == 'False'))) {
-                const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
-                // Set the message ID as a data attribute
-                listItem.attr('data-id', msg.id);
-                listItem.attr('data-ismale', msg.is_male);
-                listItem.attr('data-show', msg.show);
-                listItem.attr('data-text', msg.text);
-                listItem.attr('data-author', msg.author);
-                
-                // Create message text container
-                const messageText = $('<div></div>');
-                const parsedText = parseYouTubeEmojisToHTML(msg.text);
-                messageText.html(`[<strong>${msg.author}</strong>] - ${parsedText}`);
-                
-                // Create toggle button
-                const toggleBtn = $('<button class="btn btn-sm ms-2"></button>');
-                toggleBtn.addClass(msg.show ? 'btn-outline-danger' : 'btn-outline-success');
-                toggleBtn.html(msg.show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>');
-                toggleBtn.attr('title', msg.show ? 'Hide message' : 'Show message');
-                // Make sure the click event doesn't propagate to the parent element in any case
-                toggleBtn.on('click mousedown mouseup', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation(); // Prevent triggering the list item click
-                    if (e.type === 'click') {
-                        toggleMessageVisibility(msg.id, !msg.show);
-                    }
-                    return false; // Additional security to stop propagation
-                });
-                                
-                // Add elements to list item
-                listItem.append(messageText);
-                listItem.append(toggleBtn);
-
-                // Variable to track click timing
-                let clickTimer = null;
-                
-                // Add click event to show overlay (single click)
-                listItem.click(function() {                   
-                    // Use a timer to differentiate between single and double click
-                    const $this = $(this);
-                    clickTimer = setTimeout(function() {
-                        clickTimer = null;
-                        showMessageOverlay(msg.author, msg.text, $this);
-                    }, 300); // 300ms delay to wait for potential double click
-                });
-                
-                // Add double click event to flash message and copy to clipboard
-                listItem.dblclick(function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
+                if (msg.show && (!(msg.show == 'false')) && (!(msg.show == 'False'))) {
+                    const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
+                    // Set the message ID as a data attribute
+                    listItem.attr('data-id', msg.id);
+                    listItem.attr('data-ismale', msg.is_male);
+                    listItem.attr('data-show', msg.show);
+                    listItem.attr('data-text', msg.text);
+                    listItem.attr('data-author', msg.author);
                     
-                    // Set flag to prevent single click
-                    preventSingleClick = true;
+                    // Create message text container
+                    const messageText = $('<div></div>');
+                    const parsedText = parseYouTubeEmojisToHTML(msg.text);
+                    messageText.html(`[<strong>${msg.author}</strong>] - ${parsedText}`);
                     
-                    // Clear the single click timer if it exists
-                    if (clickTimer) {
-                        clearTimeout(clickTimer);
-                        clickTimer = null;
-                    }
-                    
-                    // Reset the prevention flag after a short delay
-                    /* setTimeout(function() {
-                        preventSingleClick = false;
-                    }, 500); */
-                    
-                    // Add flash animation class
-                    listItem.addClass('message-flash');
-                    
-                    // Copy text to clipboard
-                    const textToCopy = `[${msg.author}] - ${msg.text}`;
-                    navigator.clipboard.writeText(textToCopy).then(function() {
-                        // Show temporary visual feedback
-                        const feedback = $('<span class="copy-feedback copy-success"><i class="bi bi-check"><i> Copied!</span>');
-                        listItem.append(feedback);
-                        
-                        // Remove flash class and feedback after animation completes
-                        setTimeout(function() {
-                            listItem.removeClass('message-flash');
-                            feedback.remove();
-                        }, 1500);
-                    }).catch(function(err) {
-                        console.error('Error during copy: ', err);
-                        listItem.append('<span class="copy-feedback copy-error"><i class="bi bi-exclamation-triangle"></i> Error during copy</span>');
-                        setTimeout(function() {
-                            listItem.removeClass('message-flash');
-                        }, 1500);
+                    // Create toggle button
+                    const toggleBtn = $('<button class="btn btn-sm ms-2"></button>');
+                    toggleBtn.addClass(msg.show ? 'btn-outline-danger' : 'btn-outline-success');
+                    toggleBtn.html(msg.show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>');
+                    toggleBtn.attr('title', msg.show ? 'Hide message' : 'Show message');
+                    // Make sure the click event doesn't propagate to the parent element in any case
+                    toggleBtn.on('click mousedown mouseup', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation(); // Prevent triggering the list item click
+                        if (e.type === 'click') {
+                            toggleMessageVisibility(msg.id, !msg.show);
+                        }
+                        return false; // Additional security to stop propagation
                     });
-                });
+                                    
+                    // Add elements to list item
+                    listItem.append(messageText);
+                    listItem.append(toggleBtn);
 
-                messageList.append(listItem);
+                    // Variable to track click timing
+                    let clickTimer = null;
+                    
+                    // Add click event to show overlay (single click)
+                    listItem.click(function() {                   
+                        // Use a timer to differentiate between single and double click
+                        const $this = $(this);
+                        clickTimer = setTimeout(function() {
+                            clickTimer = null;
+                            showMessageOverlay(msg.author, msg.text, $this);
+                        }, 300); // 300ms delay to wait for potential double click
+                    });
+                    
+                    // Add double click event to flash message and copy to clipboard
+                    listItem.dblclick(function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Set flag to prevent single click
+                        preventSingleClick = true;
+                        
+                        // Clear the single click timer if it exists
+                        if (clickTimer) {
+                            clearTimeout(clickTimer);
+                            clickTimer = null;
+                        }
+                        
+                        // Reset the prevention flag after a short delay
+                        /* setTimeout(function() {
+                            preventSingleClick = false;
+                        }, 500); */
+                        
+                        // Add flash animation class
+                        listItem.addClass('message-flash');
+                        
+                        // Copy text to clipboard
+                        const textToCopy = `[${msg.author}] - ${msg.text}`;
+                        navigator.clipboard.writeText(textToCopy).then(function() {
+                            // Show temporary visual feedback
+                            const feedback = $('<span class="copy-feedback copy-success"><i class="bi bi-check"><i> Copied!</span>');
+                            listItem.append(feedback);
+                            
+                            // Remove flash class and feedback after animation completes
+                            setTimeout(function() {
+                                listItem.removeClass('message-flash');
+                                feedback.remove();
+                            }, 1500);
+                        }).catch(function(err) {
+                            console.error('Error during copy: ', err);
+                            listItem.append('<span class="copy-feedback copy-error"><i class="bi bi-exclamation-triangle"></i> Error during copy</span>');
+                            setTimeout(function() {
+                                listItem.removeClass('message-flash');
+                            }, 1500);
+                        });
+                    });
+                    messageList.append(listItem);
+                }
             }
         });
         

@@ -21,6 +21,10 @@ ENV/
 *.swo
 *.code-workspace
 
+# Data
+!data/.gitkeep
+data/*
+
 # Logs
 logs/*.log
 *.log
