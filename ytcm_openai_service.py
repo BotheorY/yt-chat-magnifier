@@ -7,6 +7,7 @@ class OpenAIService:
     def __init__(self, api_key):
         self.api_key = api_key
         openai.api_key = api_key
+        openai.base_url = YTCM_OPENAI_BASE_URL
         self.model = YTCM_GPT_MODEL
     
     def is_question(self, text):
@@ -185,7 +186,9 @@ class OpenAIService:
                 translation_addendum = ""
             prompt = f"""Correct the spelling and improve the form of the following text. 
             Maintain the original meaning and tone. Do not add or remove information.
-            Do not modify any placeholders in the format __EMOTICON_X__.{translation_addendum}
+            If the text contains placeholders in the format __EMOTICON_X__, then do not modify any of these placeholders.
+            {translation_addendum}
+            Reply only with the revised text without adding any annotations. If the text contains emoticons or other symbols or special characters, leave these elements unchanged in your response.
             
             Text: {protected_text}
             """

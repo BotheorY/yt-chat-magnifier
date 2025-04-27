@@ -7,6 +7,7 @@ from google.auth.transport.requests import Request
 from google.auth.exceptions import RefreshError
 import json
 from flask import request
+import time
 from ytcm_consts import *
 from ytcm_utils import *
 
@@ -17,7 +18,6 @@ class YouTubeChatReader:
         self.scopes = ['https://www.googleapis.com/auth/youtube.readonly']
         self.youtube = None
         self.live_chat_id = None
-        self.next_page_token = None
         self.connected = False
         self.token_file = YTCM_YT_TOKEN_FILE
         self.redirect_uri = request.url_root + 'ytcm_oauth2callback'
@@ -31,13 +31,13 @@ class YouTubeChatReader:
 
             if not credentials:
                 if resume_only:
-                    err_log("Failed to authenticate cause no credentials from file")
+                    err_log("Failed to authenticate cause no credentials from file", None)
                 else:
-                    err_log("Failed to authenticate with OAuth 2.0")
+                    err_log("Failed to authenticate with OAuth 2.0", None)
                 return False
             
             if isinstance(credentials, str):
-                err_log("Redirected to YouTube login page.")
+                err_log("Redirected to YouTube login page.", None)
                 return credentials
 
             # Create YouTube service
@@ -97,9 +97,14 @@ class YouTubeChatReader:
         flow = Flow.from_client_secrets_file(YTCM_GOOGLE_CONFIG_FILE, scopes=self.scopes, redirect_uri=self.redirect_uri)
         return flow
 
-    def _get_live_chat_id(self):
+    def get_live_chat_id(self):
         """Gets the live chat ID from the authenticated channel"""
         try:
+
+            if not self.connected:
+                err_log("Not connected to YouTube", None)
+                return None
+                
             # Get the list of active live broadcasts
             request = self.youtube.liveBroadcasts().list(
                 part="snippet,contentDetails",
@@ -129,60 +134,78 @@ class YouTubeChatReader:
         
         except HttpError as e:
             err_log(f"HTTP error while retrieving live chat ID: {str(e)}")
-            return None
+            return False
         except Exception as e:
             err_log(f"Error while retrieving live chat ID: {str(e)}")
-            return None
+            return False
     
     def get_new_messages(self):
         """Gets new messages from the live chat"""
 
         if not self.connected:
-            err_log("Not connected to YouTube")
-            return []
+            err_log("Not connected to YouTube", None)
+            return None
 
         # Get the live chat ID
-        self.live_chat_id = self._get_live_chat_id()            
+        self.live_chat_id = self.get_live_chat_id()            
         if not self.live_chat_id:
-            err_log("No live stream found on the channel")
-            return False
+            err_log("No live stream found on the channel", None)
+            return self.live_chat_id
         
         try:
             # Request chat messages
-            request = self.youtube.liveChatMessages().list(
-                liveChatId=self.live_chat_id,
-                part="snippet,authorDetails",
-                pageToken=self.next_page_token
-            )
-            response = request.execute()
-            
-            # Update token for the next request
-            self.next_page_token = response.get('nextPageToken')
-            
-            # Extract messages
+            next_page_token = None
+            total_results = 0
+            processed_results = 0
+            polling_interval = 0
             messages = []
-            for item in response.get('items', []):
-                if item['snippet']['type'] == 'textMessageEvent':
-                    messages.append({
-                        'author': item['authorDetails']['displayName'],
-                        'text': item['snippet']['displayMessage'],
-                        'published_at': item['snippet']['publishedAt']
-                    })
+
+            while True:
+                # Request chat messages
+                time.sleep(polling_interval * 0.001)
+                request = self.youtube.liveChatMessages().list(
+                    liveChatId=self.live_chat_id,
+                    part="snippet,authorDetails",
+                    maxResults=2000,
+                    pageToken=next_page_token
+                )
+                response = request.execute()
+                polling_interval = int(response.get('pollingIntervalMillis', 0))
+                # Update token for the next request
+                next_page_token = response.get('nextPageToken')
+                info_log(f"Next page token updated: {next_page_token}")
+                # Update total results
+                total_results = response.get('pageInfo', {}).get('totalResults', 0)            
+                
+                # Extract messages
+                for item in response.get('items', []):
+                    if item['snippet']['type'] == 'textMessageEvent':
+                        messages.append({
+                            'author': item['authorDetails']['displayName'],
+                            'text': item['snippet']['displayMessage'],
+                            'published_at': item['snippet']['publishedAt']
+                        })
+                        processed_results += 1
+                
+                # Check if all results have been processed
+                if processed_results >= total_results:
+                    break
+
+            info_log(f"Retrieved {len(messages)} new messages")
             
             return messages
         
         except HttpError as e:
             err_log(f"HTTP error during message retrieval: {str(e)}")
-            return []
+            return False
         except Exception as e:
             err_log(f"Error during message retrieval: {str(e)}")
-            return []
+            return False
     
     def disconnect(self):
         """Disconnects from YouTube APIs"""
         self.youtube = None
         self.live_chat_id = None
-        self.next_page_token = None
         self.connected = False
         # Delete the token file if it exists
         if os.path.exists(self.token_file):
@@ -199,7 +222,7 @@ class YouTubeChatReader:
         """Gets the title of the current live stream"""
 
         if not self.connected:
-            err_log("Not connected to YouTube")
+            err_log("Not connected to YouTube", None)
             return '[NO LIVE STREAM IN PROGRESS]'
 
         try:
@@ -242,7 +265,7 @@ class YouTubeChatReader:
         """Gets the name of the authenticated channel"""
 
         if not self.connected:            
-            err_log("Not connected to YouTube")
+            err_log("Not connected to YouTube", None)
             return '...'
 
         try:

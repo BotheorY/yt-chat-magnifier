@@ -1,6 +1,7 @@
 let lastNMessages = 0;
 let preventSingleClick = false;
 let pollingInterval;
+let apiQuotaErrMsg = false;
 
 $(document).ready(function() {
 
@@ -129,13 +130,18 @@ $(document).ready(function() {
             type: 'GET',
             success: function(response) {
                 if (response.success) {
+                    apiQuotaErrMsg = false;
                     updateMessageList(response.messages);
                 } else if (response.error !== 'Not connected to YouTube') {
                     console.error('Error retrieving messages:', response.error);
+                    if ((!apiQuotaErrMsg) && response.error.toLowerCase().includes('query')) {
+                        apiQuotaErrMsg = true;
+                        alert(response.error);
+                    }
                 }
             },
             error: function() {
-                $('#message-list').empty();
+//                $('#message-list').empty();
                 console.error('Error communicating with server');
             }
         });
@@ -143,21 +149,24 @@ $(document).ready(function() {
     
     // Function to update message list
     function updateMessageList(messages) {
+
         const messageList = $('#message-list');
-        
-        // Clear the list
-        messageList.empty();
+        let messageListCleared = false;
         
         // Add messages
         messages.forEach(function(msg) {
 
             if (msg.live_title) {
                 updateLiveTitle(msg.live_title);
-
-console.log('Live title changed.', msg.live_title); // Debugging
-
-            } else {
-            
+                if (msg.clean_msg_list) {
+                    messageList.empty();
+                    messageListCleared = true;
+                }
+            } else {            
+                if (!messageListCleared) {
+                    messageList.empty();
+                    messageListCleared = true;
+                }
                 if (msg.show && (!(msg.show == 'false')) && (!(msg.show == 'False'))) {
                     const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
                     // Set the message ID as a data attribute
@@ -169,8 +178,16 @@ console.log('Live title changed.', msg.live_title); // Debugging
                     
                     // Create message text container
                     const messageText = $('<div></div>');
-                    const parsedText = parseYouTubeEmojisToHTML(msg.text);
-                    messageText.html(`[<strong>${msg.author}</strong>] - ${parsedText}`);
+                    let msgText = msg.text;
+                    if (forceMsgUppercase) {
+                        msgText = msgText.toUpperCase();
+                    }
+                    const parsedText = parseYouTubeEmojisToHTML(msgText);
+                    let msgAuthor = msg.author;
+                    if (forceMsgUppercase) {
+                        msgAuthor = msgAuthor.toUpperCase();
+                    }
+                    messageText.html(`[<strong>${msgAuthor}</strong>] - ${parsedText}`);
                     
                     // Create toggle button
                     const toggleBtn = $('<button class="btn btn-sm ms-2"></button>');
@@ -313,6 +330,11 @@ console.log('Live title changed.', msg.live_title); // Debugging
             return;
         }
         
+        if (forceMsgUppercase) {
+            author = author.toUpperCase();
+            text = text.toUpperCase();
+        }
+        
         // Get the message ID from the clicked element
         const messageId = element.attr('data-id');
         const isMale = element.attr('data-ismale') === 'true';
@@ -340,7 +362,7 @@ console.log('Live title changed.', msg.live_title); // Debugging
     
     // Copy the message text to the clipboard
     $('#overlay-copy').click(function() {
-        const text = $('#overlay-content').text();
+        const text = '[' + $('#overlay-author').text() + '] - ' + $('#overlay-content').text();
         navigator.clipboard.writeText(text).then(function() {
             // Temporary visual feedback
             const originalText = $('#overlay-copy').html();

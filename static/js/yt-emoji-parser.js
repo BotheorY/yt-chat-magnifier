@@ -117,13 +117,15 @@ function parseYouTubeEmojisToHTML(text) {
     
     let parsedText = text;
     
-    // Search for all emoticon codes in the format :emoticon-name:
-    const emojiRegex = /:([-a-z0-9+]+):/g;
+    // Search for all emoticon codes in the format :emoticon-name: (case insensitive)
+    const emojiRegex = /:([-a-zA-Z0-9+]+):/g;
     
     // Replace found codes with HTML elements that incorporate online images
     parsedText = parsedText.replace(emojiRegex, (match) => {
-        if (ytEmojiMap[match]) {
-            return `<img src="${ytEmojiMap[match]}" alt="${match}" title="${match}" class="yt-emoji" />`;
+        // Convert match to lowercase to make it case-insensitive
+        const lowerCaseMatch = match.toLowerCase();
+        if (ytEmojiMap[lowerCaseMatch]) {
+            return `<img src="${ytEmojiMap[lowerCaseMatch]}" alt="${match}" title="${match}" class="yt-emoji" />`;
         }
         return match;
     });

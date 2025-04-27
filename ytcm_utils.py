@@ -2,6 +2,7 @@ import logging
 from logging import *
 from logging.handlers import RotatingFileHandler
 import os
+from flask import request
 from ytcm_consts import *
 
 # Logger configuration
@@ -29,7 +30,7 @@ def setup_logger():
             delay=True  # Delay file opening until first log write
         )
         file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+            '%(asctime)s %(levelname)s: [%(ip)s] %(message)s [in %(pathname)s:%(lineno)d]'
         ))
         logger.addHandler(file_handler)
     except (OSError, IOError) as e:
@@ -38,29 +39,59 @@ def setup_logger():
     
     # Handler for console (always add this as a fallback)
     console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: [%(ip)s] %(message)s'
+    ))
     console_handler.setLevel(logging.INFO)
     logger.addHandler(console_handler)
+    
+    # Ensure that the logger can handle extra attributes
+    logging.LoggerAdapter(logger, {"ip": "N/A"})
     
     return logger
 
 ytcm_logger: Logger = setup_logger()
 
-def info_log(message):
+def info_log(message, ip=None):
     global ytcm_logger
     if YTCM_TRACE_MODE:
         try:
-            ytcm_logger.info(message)
+            # Get the IP from the Flask request if not provided and if we are in a Flask context
+            if ip is None and request:
+                try:
+                    ip = request.remote_addr
+                except:
+                    ip = "N/A"
+            # If we still don't have an IP, use a default value
+            if ip is None:
+                ip = "N/A"
+                
+            # Add the IP as an extra to the log
+            extra = {'ip': ip}
+            ytcm_logger.info(message, extra=extra)
         except (OSError, IOError) as e:
             # Handle stale file handle errors during logging
             print(f"Logging error (handled): {str(e)}")
             # Attempt to reset logger handlers
             ytcm_logger = setup_logger()
 
-def err_log(message, exc_info=YTCM_ERR_LOG_EXTRA_INFO):
+def err_log(message, exc_info=YTCM_ERR_LOG_EXTRA_INFO, ip=None):
     global ytcm_logger
     if YTCM_DEBUG_MODE:
         try:
-            ytcm_logger.error(message, exc_info)
+            # Get the IP from the Flask request if not provided and if we are in a Flask context
+            if ip is None and request:
+                try:
+                    ip = request.remote_addr
+                except:
+                    ip = "N/A"
+            # If we still don't have an IP, use a default value
+            if ip is None:
+                ip = "N/A"
+                
+            # Add the IP as an extra to the log
+            extra = {'ip': ip}
+            ytcm_logger.error(message, extra=extra)
         except (OSError, IOError) as log_err:
             # Handle stale file handle errors during error logging
             print(f"Logging error (handled): {str(log_err)}")

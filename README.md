@@ -8,11 +8,12 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
 - **Interactive Message Display**: Messages shown in a real-time updated list with auto-scrolling
 - **Message Management**: Manually remove messages from the list
 - **Smart Filtering**: Show only messages with questions and/or containing a minimum number of words, hide duplicates and channel owner filtering (option to ignore messages from the YouTube channel owner)
-- **AI Moderation**: Automatic exclusion of spam, offensive content, or irrelevant messages through AI moderation
+- **AI Moderation**: Automatic exclusion of offensive content through AI moderation
 - **Accessibility Features**:
   - Zoom on message text by increasing text size
   - High contrast mode for better visibility
   - Voice playback of messages via text-to-speech (through AWS Polly API, voice selection according to message author gender)
+  - Optional uppercase formatting for better visibility of author names and message text
   - Easy message text copying to clipboard
 - **Language Features**:
   - Automatic spelling correction
@@ -29,7 +30,7 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
 - Python 3.7+
 - Flask 2.0+
 - Google API Client
-- OpenAI API (for AI moderation, questions and message author gender detection)
+- OpenAI API or compatible alternative APIs (for AI moderation, questions recognition and message author gender detection)
 - AWS Account (for Polly text-to-speech service)
 - Modern web browser (Chrome, Firefox, Edge, Safari)
 
@@ -37,8 +38,8 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/youtube-chat-magnifier.git
-   cd youtube-chat-magnifier
+   git clone https://github.com/BotheorY/yt-chat-magnifier.git
+   cd yt-chat-magnifier
    ```
 
 2. Create and activate a virtual environment (recommended):
@@ -75,11 +76,9 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
 
 2. Open your browser at `http://localhost:5000`
 
-3. Enter a YouTube livestream URL or ID in the input field
+3. Click on the "CONNECT TO YOUTUBE" button to start monitoring the chat
 
-4. Click on the "CONNECT TO YOUTUBE" button to start monitoring the chat
-
-5. Configure filters and display options according to your preferences:
+4. Configure filters and display options according to your preferences:
    - Set minimum word count for messages
    - Enable/disable question detection
    - Enable/disable channel owner message filtering
@@ -88,7 +87,7 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
    - Enable/disable AI moderation
    - Toggle text-to-speech functionality
 
-6. Filtered messages will be displayed in the list. Double click or double tap on message to copy it to clipboard. Click or tap a message to open the zoom window and read aloud through the player if text-to-speech is enabled.
+5. Filtered messages will be displayed in the list. Double click or double tap on message to copy it to clipboard. Click or tap a message to open the zoom window and read aloud through the player if text-to-speech is enabled.
 
 ## Project Structure
 
@@ -107,11 +106,9 @@ A Flask web application that reads YouTube livestream chat in real-time and allo
 
 ## Configuration Options
 
-The application can be configured through environment variables and/or by editing the constants in ytcm_consts.py file:
+The application can be configured by editing the constants in ytcm_consts.py file:
 
 ### General Configuration
-- `FLASK_ENV`: Set to `development` for debug mode or `production` for production mode
-- `FLASK_PORT`: Change the default port (5000) if needed
 - `YTCM_LAYOUT_STYLE`: UI theme ('standard', 'dark', or 'high-contrast')
 
 ### Logging Configuration
@@ -121,7 +118,7 @@ The application can be configured through environment variables and/or by editin
 - `YTCM_LOG_FILE_BACKUP_COUNT`: Number of log file backups to keep
 
 ### Message Filtering Configuration
-- `YTCM_IGNORE_CHANNEL_OWNER_MESSAGES`: Ignore messages from the channel owner (true/false)
+- `YTCM_IGNORE_CHANNEL_OWNER_MESSAGES`: Ignore messages from the channel owner (True/False)
 - `YTCM_MIN_MESSAGE_WORDS`: Minimum number of words for a message to be displayed
 - `YTCM_APPLY_MODERATION`: Enable/disable AI-based message moderation
 - `YTCM_QUESTIONS_ONLY`: Show only messages that contain questions
@@ -130,6 +127,7 @@ The application can be configured through environment variables and/or by editin
 - `YTCM_RETRIEVE_MSG_AUTHOR_GENDER`: Detect message author gender for TTS voice selection
 - `YTCM_APPLY_SPELLING_CORRECTION`: Enable/disable automatic spelling correction
 - `YTCM_MSG_FORCED_LANG`: Force translation to a specific language (e.g., 'Italian', or None for no translation)
+- `YTCM_FORCE_MSG_UPPERCASE`: Enable/disable uppercase formatting for author names and message text in the chat list
 
 ### Text-to-Speech Configuration
 - `YTCM_MALE_TTS_VOICE`: AWS Polly voice for male authors (e.g., 'Giorgio')
@@ -138,6 +136,7 @@ The application can be configured through environment variables and/or by editin
 
 ### API Configuration
 - `YTCM_GPT_MODEL`: OpenAI GPT model to use (e.g., 'gpt-4.1')
+- `YTCM_OPENAI_BASE_URL`: Base URL for OpenAI API or compatible alternative LLM providers (with alternative LLM providers, AI moderation probably won't work)
 - `YTCM_POLLING_INTERVAL_MS`: Polling interval in milliseconds for fetching new chat messages
 
 ## Logging Configuration

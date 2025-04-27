@@ -142,7 +142,7 @@ def ytcm_index():
     ytcm_connect(True)
     live_title = ytcm_youtube_chat_reader.get_live_title() if ytcm_youtube_chat_reader else '[NO LIVE STREAM IN PROGRESS]'
     channel_name = ytcm_youtube_chat_reader.get_channel_name() if ytcm_youtube_chat_reader else '...'
-    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title, channel_name=channel_name, tts_enabled=ytcm_tts_enabled, tts_audio_files_dir=YTCM_TTS_AUDIO_FILES_DIR, layout_style=YTCM_LAYOUT_STYLE)
+    return render_template('ytcm_index.html', connected=ytcm_youtube_chat_reader is not None, polling_interval=YTCM_POLLING_INTERVAL_MS, live_title=live_title, channel_name=channel_name, tts_enabled=ytcm_tts_enabled, tts_audio_files_dir=YTCM_TTS_AUDIO_FILES_DIR, layout_style=YTCM_LAYOUT_STYLE, force_msg_uppercase=YTCM_FORCE_MSG_UPPERCASE)
 
 @app.route('/ytcm_connect', methods=['POST'])
 def ytcm_connect(resume_only=False):
@@ -301,37 +301,57 @@ def ytcm_get_messages():
     global ytcm_youtube_chat_reader, ytcm_openai_service, ytcm_chat_messages_manager, ytcm_hidden_messages_manager, ytcm_last_live_chat_id, ytcm_live_chat_first_change
     
     try:
+        clean_msg_list = False
         current_live_title = ''
         if not ytcm_youtube_chat_reader or not ytcm_openai_service:
             return jsonify({'success': False, 'error': 'Not connected to YouTube'})
             
-        live_chat_id = ytcm_youtube_chat_reader.live_chat_id
+        live_chat_id = ytcm_youtube_chat_reader.get_live_chat_id()
         if live_chat_id != ytcm_last_live_chat_id:            
-            
-            info_log(f"Live ID changed: {live_chat_id}")
-            
-            current_live_title = ytcm_youtube_chat_reader.get_live_title()
-            
-            info_log(f"New live title: {current_live_title}")
-
             ytcm_last_live_chat_id = live_chat_id
-            ytcm_chat_messages_manager.clear_messages()            
-            ytcm_hidden_messages_manager.clear_hidden_ids(not ytcm_live_chat_first_change)
-            ytcm_clear_audio_files()
-            ytcm_live_chat_first_change = False
             
-            info_log(f"Live chat ID changed: {live_chat_id}")
+            if ytcm_live_chat_first_change:
+                info_log(f"First change of live chat ID: {live_chat_id}")
+            else:
+                info_log(f"Live ID changed: {live_chat_id}")
+            
+#            current_live_title = ytcm_youtube_chat_reader.get_live_title()
+            
+            if live_chat_id != False:
+                ytcm_chat_messages_manager.clear_messages()            
+                ytcm_hidden_messages_manager.clear_hidden_ids(not ytcm_live_chat_first_change)
+                ytcm_clear_audio_files()
+                ytcm_live_chat_first_change = None
+                clean_msg_list = True
+        elif not ytcm_live_chat_first_change:
+            ytcm_live_chat_first_change = False
         
-        if current_live_title:
-            current_live_title = {'live_title': current_live_title}
+#        if current_live_title:
+        current_live_title = {'live_title': ytcm_youtube_chat_reader.get_live_title()}
+        if clean_msg_list:
+            current_live_title['clean_msg_list'] = True
+        info_log(f"Live title: {current_live_title}")
 
         # Reading new messages from YouTube chat
         new_messages = ytcm_youtube_chat_reader.get_new_messages()
+        
+        info_log(f"New messages from Google server: {new_messages}")
+
         if new_messages == False:
+        
+            err_log("Reading messages a communication error occurred with the Google server", None)
+
+            return jsonify({'success': False, 'error': 'Oops! We couldn’t reach the Google server. \nIt looks like your query limit might be used up. \nThe query quota may have been exceeded. Please check your account limits.'})
+
+        if (new_messages == None) or ((len(new_messages) == 0) and (current_live_title == None)):
             ytcm_chat_messages_manager.clear_messages()
             ytcm_clear_audio_files()
-            return jsonify({'success': True, 'messages': [current_live_title], 'error': 'No live stream found on the channel'})
-                
+
+        if not new_messages:
+            if current_live_title:
+                message_ls = [current_live_title]
+                return jsonify({'success': True, 'messages': message_ls, 'error': 'No live stream found on the channel'})
+                            
         for msg in new_messages:
             # Verify that the message has at least minimum words
             words = msg['text'].split()
