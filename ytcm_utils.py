@@ -2,6 +2,9 @@ import logging
 from logging import *
 from logging.handlers import RotatingFileHandler
 import os
+#from sys import exc_info as ei
+import traceback
+import inspect
 from flask import request
 from ytcm_consts import *
 
@@ -30,7 +33,7 @@ def setup_logger():
             delay=True  # Delay file opening until first log write
         )
         file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: [%(ip)s] %(message)s [in %(pathname)s:%(lineno)d]'
+            '%(asctime)s %(levelname)s: [%(ip)s] %(message)s'
         ))
         logger.addHandler(file_handler)
     except (OSError, IOError) as e:
@@ -45,12 +48,12 @@ def setup_logger():
     console_handler.setLevel(logging.INFO)
     logger.addHandler(console_handler)
     
-    # Ensure that the logger can handle extra attributes
-    logging.LoggerAdapter(logger, {"ip": "N/A"})
+    # Create and return a LoggerAdapter to handle extra attributes
+    adapter = logging.LoggerAdapter(logger, {"ip": "N/A"})
     
-    return logger
+    return adapter
 
-ytcm_logger: Logger = setup_logger()
+ytcm_logger = setup_logger()
 
 def info_log(message, ip=None):
     global ytcm_logger
@@ -65,10 +68,17 @@ def info_log(message, ip=None):
             # If we still don't have an IP, use a default value
             if ip is None:
                 ip = "N/A"
+            
+            # Get caller information
+            caller_frame = inspect.currentframe().f_back
+            caller_file = caller_frame.f_code.co_filename
+            caller_line = caller_frame.f_lineno
                 
-            # Add the IP as an extra to the log
-            extra = {'ip': ip}
-            ytcm_logger.info(message, extra=extra)
+            # Update the adapter's extra dict with the current IP
+            ytcm_logger.extra['ip'] = ip
+            
+            # Log the message with file and line info as part of the message
+            ytcm_logger.info(f"{message} [in {caller_file}:{caller_line}]")
         except (OSError, IOError) as e:
             # Handle stale file handle errors during logging
             print(f"Logging error (handled): {str(e)}")
@@ -88,10 +98,26 @@ def err_log(message, exc_info=YTCM_ERR_LOG_EXTRA_INFO, ip=None):
             # If we still don't have an IP, use a default value
             if ip is None:
                 ip = "N/A"
+            
+            # Get caller information
+            caller_frame = inspect.currentframe().f_back
+            caller_file = caller_frame.f_code.co_filename
+            caller_line = caller_frame.f_lineno
+            
+            # Check if we're in an exception context
+#            in_except_block = ei()[0] is not None
+            in_except_block = False
+
+            # Update the adapter's extra dict with the current IP
+            ytcm_logger.extra['ip'] = ip
+            
+            # If we're in an exception block, include stack trace
+            if in_except_block:
+                stack_trace = traceback.format_exc()
+                ytcm_logger.error(f"{message}\n{stack_trace} [in {caller_file}:{caller_line}]")
+            else:
+                ytcm_logger.error(f"{message} [in {caller_file}:{caller_line}]")
                 
-            # Add the IP as an extra to the log
-            extra = {'ip': ip}
-            ytcm_logger.error(message, extra=extra)
         except (OSError, IOError) as log_err:
             # Handle stale file handle errors during error logging
             print(f"Logging error (handled): {str(log_err)}")

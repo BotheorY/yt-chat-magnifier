@@ -31,6 +31,7 @@ class ytcm_ChatMessagesManager:
     
     def _load_messages(self):
         """Load messages from the JSON file if it exists."""
+
         try:
             if os.path.exists(self.file_path):
                 with open(self.file_path, 'r', encoding='utf-8') as f:
@@ -53,6 +54,7 @@ class ytcm_ChatMessagesManager:
     
     def _save_messages(self):
         """Save messages to the JSON file."""
+
         try:
             # Convert objects to serializable dictionaries
             serializable_messages = []
@@ -82,9 +84,10 @@ class ytcm_ChatMessagesManager:
         if (not eq_ids) or (len(eq_ids) == 0):
             self.messages.append(message)
             self._save_messages()
-            info_log(f"Message added with ID: {message.id}")
+            info_log(f"Message added to list: {message} ({message.id}, {message.show})")
         else:
             info_log(f"Message already exists, not added: {message.id}")
+            self.update_message_visibility(message.id, message.show)
     
     def remove_message(self, message_id):
         """Remove a message from the list and save.
@@ -146,21 +149,24 @@ class ytcm_ChatMessagesManager:
         Returns:
             bool: True if the message was updated, False otherwise.
         """
+        if show_value:
+            return True
         self._load_messages()
-        for msg in self.messages:
-            if msg.id == message_id:
-                msg.show = show_value
+
+        for i in range(len(self.messages)):
+            if self.messages[i].id == message_id:
+                self.messages[i].show = show_value
                 self._save_messages()
-                info_log(f"Updated message visibility {message_id} to {show_value}")
+                info_log(f"Updated message visibility for {self.messages[i]} ({message_id}) to {self.messages[i].show}")
                 return True
+
         info_log(f"Attempt to update visibility for message not found: {message_id}")
         return False
-
 
 class ytcm_HiddenMessagesManager:
     """Class for managing hidden message IDs, saving them in a JSON file."""
     
-    def __init__(self, file_path=os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), 'data')), 'ycm-hidden_messages.json')):
+    def __init__(self, file_path=os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), 'data')), 'ycm-hidden_messages.json'), messages:ytcm_ChatMessagesManager = None):
         """Initialize the hidden message IDs manager.
         
         Args:
@@ -168,9 +174,10 @@ class ytcm_HiddenMessagesManager:
         """
         self.hidden_msg_ids = set()
         self.file_path = file_path
-        info_log(f"Initializing ytcm_HiddenMessagesManager with file: {file_path}")
+        self.messages = messages
         self._ensure_directory_exists()
         self._load_hidden_ids()
+        info_log(f"Initialized ytcm_HiddenMessagesManager with file: {file_path}")
     
     def _ensure_directory_exists(self):
         """Ensure that the directory for the JSON file exists."""
@@ -183,6 +190,7 @@ class ytcm_HiddenMessagesManager:
     
     def _load_hidden_ids(self):
         """Load hidden message IDs from the JSON file if it exists."""
+
         try:
             if os.path.exists(self.file_path):
                 with open(self.file_path, 'r', encoding='utf-8') as f:
@@ -194,6 +202,7 @@ class ytcm_HiddenMessagesManager:
     
     def _save_hidden_ids(self):
         """Save hidden message IDs to the JSON file."""
+
         try:
             with open(self.file_path, 'w', encoding='utf-8') as f:
                 json.dump(list(self.hidden_msg_ids), f, ensure_ascii=False, indent=2)
@@ -209,6 +218,9 @@ class ytcm_HiddenMessagesManager:
         """
         self._load_hidden_ids()
         self.hidden_msg_ids.add(message_id)
+        if self.messages:
+            self.messages.update_message_visibility(message_id, False)
+            info_log(f"[ytcm_HiddenMessagesManager.add_hidden_id] Show setted to False for message with ID {message_id}: \"{next((m for m in self.messages.get_messages() if m.id == message_id)).raw_text if next((m for m in self.messages.get_messages() if m.id == message_id), None) else '[MESSAGE ID NOT FOUND]'}\"")
         self._save_hidden_ids()
         info_log(f"Added ID {message_id} to the hidden IDs list")
     
@@ -221,6 +233,7 @@ class ytcm_HiddenMessagesManager:
         Returns:
             bool: True if the ID was removed, False otherwise.
         """
+        return True
         self._load_hidden_ids()
         if message_id in self.hidden_msg_ids:
             self.hidden_msg_ids.remove(message_id)

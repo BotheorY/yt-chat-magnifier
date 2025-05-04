@@ -2,8 +2,64 @@ let lastNMessages = 0;
 let preventSingleClick = false;
 let pollingInterval;
 let apiQuotaErrMsg = false;
+let questionsOnly = 1; // Default value is 1 (on)
+
+// Function to set a cookie
+function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + value + expires + "; path=/";
+}
+
+// Function to get a cookie
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
 
 $(document).ready(function() {
+    // Initialize questions button state from cookie
+    const savedQuestionsOnly = getCookie('questionsOnly');
+    if (savedQuestionsOnly !== null) {
+        questionsOnly = parseInt(savedQuestionsOnly);
+    }
+    
+    // Update button appearance based on saved state
+    updateQuestionsButtonState();
+    
+    // Questions button click handler
+    $('#questions-btn').click(function() {
+        // Toggle state
+        questionsOnly = questionsOnly === 1 ? 0 : 1;
+        
+        // Update button appearance
+        updateQuestionsButtonState();
+        
+        // Save state to cookie
+        setCookie('questionsOnly', questionsOnly, 30); // Save for 30 days
+    });
+    
+    // Function to update button appearance
+    function updateQuestionsButtonState() {
+        const questionsBtn = $('#questions-btn');
+        questionsBtn.attr('data-questions-only', questionsOnly);
+        
+        if (questionsOnly === 1) {
+            questionsBtn.addClass('questions-btn-on').removeClass('questions-btn-off');
+        } else {
+            questionsBtn.addClass('questions-btn-off').removeClass('questions-btn-on');
+        }
+    }
 
     $('#scroll-bottom-btn').click(function() {
         
@@ -133,7 +189,7 @@ $(document).ready(function() {
                     apiQuotaErrMsg = false;
                     updateMessageList(response.messages);
                 } else if (response.error !== 'Not connected to YouTube') {
-                    console.error('Error retrieving messages:', response.error);
+                    console.log('Error retrieving messages:', response.error);
                     if ((!apiQuotaErrMsg) && response.error.toLowerCase().includes('query')) {
                         apiQuotaErrMsg = true;
                         alert(response.error);
@@ -142,7 +198,7 @@ $(document).ready(function() {
             },
             error: function() {
 //                $('#message-list').empty();
-                console.error('Error communicating with server');
+                console.log('Error communicating with server');
             }
         });
     }
@@ -256,7 +312,7 @@ $(document).ready(function() {
                                 feedback.remove();
                             }, 1500);
                         }).catch(function(err) {
-                            console.error('Error during copy: ', err);
+                            console.log('Error during copy: ', err);
                             listItem.append('<span class="copy-feedback copy-error"><i class="bi bi-exclamation-triangle"></i> Error during copy</span>');
                             setTimeout(function() {
                                 listItem.removeClass('message-flash');
@@ -296,19 +352,19 @@ $(document).ready(function() {
             }),
             success: function(response) {
                 if (response.success) {
-                    // Se showValue è true, aggiorna la lista per mostrare il messaggio
+                    // If showValue is true, update the list to show the message
                     if (showValue) {
                         fetchMessages();
                     }
                 } else {
-                    console.error('Error toggling message visibility:', response.error);
-                    // In caso di errore, aggiorna comunque la lista per ripristinare lo stato corretto
+                    console.log('Error toggling message visibility:', response.error);
+                    // In case of error, update the list anyway to restore the correct state
                     fetchMessages();
                 }
             },
             error: function() {
-                console.error('Error communicating with server');
-                // In caso di errore, aggiorna la lista per ripristinare lo stato corretto
+                console.log('Error communicating with server');
+                // In case of error, update the list anyway to restore the correct state
                 fetchMessages();
             }
         });
@@ -371,7 +427,7 @@ $(document).ready(function() {
                 $('#overlay-copy').html(originalText);
             }, 2000);
         }).catch(function(err) {
-            console.error('Error during copy: ', err);
+            console.log('Error during copy: ', err);
         });
     });
     
@@ -400,33 +456,56 @@ $(document).ready(function() {
                     // The audio file does not exist, show the loading image
                     $('.message-overlay-footer').prepend('<div id="audio-container"><img src="/static/images/loading-bar.gif" alt="Loading..." style="height: 40px;"></div>');
                     
-                    // Request the generation of the audio file
-                    $.ajax({
-                        url: '/ytcm_generate_audio',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({
-                            id: messageId,
-                            text: text,
-                            is_male: isMale
-                        }),
-                        success: function(genResponse) {
-                            if (genResponse.success) {
-                                // Replace the loading image with the audio player
-                                addAudioPlayer(messageId);
-                            } else {
-                                // Show an error message
-                                $('#audio-container').html('<div class="audio-error">Error generating audio</div>');
+                    // Request the generation of the audio file with retry mechanism
+                    let retryCount = 0;
+                    const maxRetries = 3;
+                    
+                    function generateAudio() {
+                        $.ajax({
+                            url: '/ytcm_generate_audio',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                id: messageId,
+                                text: text,
+                                is_male: isMale
+                            }),
+                            success: function(genResponse) {
+                                if (genResponse.success) {
+                                    // Replace the loading image with the audio player
+                                    addAudioPlayer(messageId);
+                                } else {
+                                    // Retry if we haven't reached max retries
+                                    if (retryCount < maxRetries) {
+                                        retryCount++;
+                                        $('#audio-container').html(`<div class="audio-loading">Attempt ${retryCount}/${maxRetries}...</div>`);
+                                        setTimeout(generateAudio, 1000); // Wait 1 second before retrying
+                                    } else {
+                                        // Show an error message after all retries failed
+                                        $('#audio-container').html('<div class="audio-error">Error generating audio</div>');
+                                    }
+                                }
+                            },
+                            error: function() {
+                                // Retry if we haven't reached max retries
+                                if (retryCount < maxRetries) {
+                                    retryCount++;
+                                    $('#audio-container').html(`<div class="audio-loading">Attempt ${retryCount}/${maxRetries}...</div>`);
+                                    setTimeout(generateAudio, 1000); // Wait 1 second before retrying
+                                } else {
+                                    // Show an error message after all retries failed
+                                    $('#audio-container').html('<div class="audio-error">Error generating audio</div>');
+                                }
                             }
-                        },
-                        error: function() {
-                            $('#audio-container').html('<div class="audio-error">Error generating audio</div>');
-                        }
-                    });
+                        });
+                    }
+                    
+                    // Start the generation process
+                    generateAudio();
                 }
             },
             error: function() {
-                console.error('Error checking audio file');
+                console.log('Error checking audio file');
             }
         });
     }

@@ -5,7 +5,10 @@ YTCM_YT_TOKEN_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), 'co
 YTCM_GOOGLE_CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), 'config', 'ytcm_google_credentials.json'))
 YTCM_OPENAI_CONFIG_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), 'config', 'ytcm_openai_credentials.json'))
 YTCM_OPENAI_BASE_URL = None
-YTCM_GPT_MODEL = "gpt-4.1"  # GPT model to use
+
+#YTCM_GPT_MODEL = "gpt-4.1" 
+YTCM_GPT_MODEL = "gpt-4.1-nano" # GPT model to use
+
 YTCM_POLLY_CONFIG_FILE =os.path.abspath(os.path.join(os.path.dirname(__file__), 'config', 'ytcm_polly_credentials.json'))
 
 # Logging configuration
@@ -14,13 +17,13 @@ YTCM_TRACE_MODE = True  # Enable/disable operation tracing
 YTCM_LOGGER_NAME = 'yt_chat_magnifier'  # Logger name
 YTCM_LOG_FILE_DIR = 'logs'  # Directory to store log files
 YTCM_LOG_FILE_NAME = 'yt-chat-magnifier.log'  # Log file name
-YTCM_LOG_FILE_MAX_SIZE = 10485760  # Maximum log file size in bytes (10MB)
+YTCM_LOG_FILE_MAX_SIZE = 52428800  # Maximum log file size in bytes (50MB)
 YTCM_LOG_FILE_BACKUP_COUNT = 10  # Number of log file backups to keep
 YTCM_ERR_LOG_EXTRA_INFO = None  # Include extra information in error logs
 
 # Messages filtering configuration
 YTCM_IGNORE_CHANNEL_OWNER_MESSAGES = True  # Ignore messages from channel owner
-YTCM_MIN_MESSAGE_WORDS = 2  # Minimum number of words in a message
+YTCM_MIN_MESSAGE_WORDS = 0  # Minimum number of words in a message
 YTCM_APPLY_MODERATION = True  # Apply moderation to messages
 YTCM_QUESTIONS_ONLY = True  # Process only questions
 

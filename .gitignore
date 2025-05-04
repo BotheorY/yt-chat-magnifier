@@ -21,6 +21,8 @@ ENV/
 *.swo
 *.code-workspace
 
+*.stackdump
+
 # Data
 !data/.gitkeep
 data/*

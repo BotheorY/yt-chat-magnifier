@@ -61,6 +61,43 @@ body {
     padding: 0.75rem 1rem;
 }
 
+/* Styles for the questions button - dark theme */
+.questions-btn {
+    font-weight: bold;
+    font-size: 1.2rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.questions-btn:hover:not(.questions-btn-on):not(.questions-btn-off) {
+    background-color: #4a4a4a;
+}
+
+.questions-btn-on:hover {
+    background-color: #34ce57;
+}
+
+.questions-btn-off:hover {
+    background-color: #868e96;
+}
+
+.questions-btn-on {
+    background-color: #28a745;
+    color: white;
+    border: 2px solid #e0e0e0;
+}
+
+.questions-btn-off {
+    background-color: #6c757d;
+    color: white;
+    border: 2px solid #e0e0e0;
+}
+
 .card-body {
     flex: 1;
     display: flex;
@@ -202,7 +239,7 @@ body {
     font-size: 1.5rem;
 }
 
-/* Media Queries per la responsività */
+/* Media Queries for responsiveness */
 @media (max-width: 1200px) {
     .container {
         max-width: 100%;

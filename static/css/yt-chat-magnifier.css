@@ -55,6 +55,43 @@ body {
     padding: 0.75rem 1rem;
 }
 
+/* Styles for the questions button */
+.questions-btn {
+    font-weight: bold;
+    font-size: 1.2rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.questions-btn:hover:not(.questions-btn-on):not(.questions-btn-off) {
+    background-color: #e9ecef;
+}
+
+.questions-btn-on:hover {
+    background-color: #34ce57;
+}
+
+.questions-btn-off:hover {
+    background-color: #868e96;
+}
+
+.questions-btn-on {
+    background-color: #28a745;
+    color: white;
+    border: 2px solid white;
+}
+
+.questions-btn-off {
+    background-color: #6c757d;
+    color: white;
+    border: 2px solid white;
+}
+
 .card-body {
     flex: 1;
     display: flex;
@@ -180,7 +217,33 @@ body {
     padding-left: 0.5rem;
 }
 
-/* Media Queries per la responsività */
+/* Audio error and loading messages */
+.audio-error {
+    color: #ff0000;
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background-color: rgba(255, 0, 0, 0.1);
+}
+
+.audio-loading {
+    color: #0066cc;
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 5px 10px;
+    border-radius: 4px;
+    background-color: rgba(0, 102, 204, 0.1);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Media Queries for responsiveness */
 @media (max-width: 1200px) {
     .container {
         max-width: 100%;

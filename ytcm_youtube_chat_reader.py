@@ -83,7 +83,7 @@ class YouTubeChatReader:
                     auth_url, state = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
                     return auth_url, resumed
                 except Exception as e:
-                    err_log(f"Errore durante il flusso OAuth Authorization Code Grant: {e}")
+                    err_log(f"Error during OAuth Authorization Code Grant flow: {e}")
                     credentials = None
             
             if credentials:
@@ -179,6 +179,9 @@ class YouTubeChatReader:
                 
                 # Extract messages
                 for item in response.get('items', []):
+                    
+                    info_log(f"[YouTubeChatReader.get_new_messages] Processing message received: {str({k: str(v) for k,v in item.items()})}")    
+
                     if item['snippet']['type'] == 'textMessageEvent':
                         messages.append({
                             'author': item['authorDetails']['displayName'],
@@ -256,10 +259,10 @@ class YouTubeChatReader:
 
         except HttpError as e:
             err_log(f"HTTP error while retrieving live title: {str(e)}")
-            return '[NO LIVE STREAM IN PROGRESS]'
+            return ''
         except Exception as e:
             err_log(f"Error while retrieving live title: {str(e)}")
-            return '[NO LIVE STREAM IN PROGRESS]'
+            return ''
 
     def get_channel_name(self):
         """Gets the name of the authenticated channel"""

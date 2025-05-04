@@ -99,7 +99,7 @@ audio {
     padding-right: 1rem;
 }
 
-/* Media Queries per la responsività */
+/* Media Queries for responsiveness */
 @media (max-width: 1200px) {
     .message-overlay {
         top: 1.5rem;
@@ -192,6 +192,19 @@ audio {
     color: #ff5252;
     font-weight: bold;
     margin-right: 1em;
+}
+
+.audio-loading {
+    color: #e0e0e0;
+    font-weight: bold;
+    margin-right: 1em;
+    animation: pulse-dark 1.5s infinite;
+}
+
+@keyframes pulse-dark {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
 }
 
 .message-overlay-copy {
