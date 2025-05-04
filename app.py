@@ -21,10 +21,10 @@ ytcm_toggle_message_visibility_in_progress = 0
 
 # Class to manage chat messages
 class ytcm_ChatMessageCustom:
-    def __init__(self, author, text, is_male=True, raw_text=None):
+    def __init__(self, author, text, is_male=True, raw_text=None, published_at=None):
         self.author = author
         self.text = text
-        self.datetime = datetime.datetime.now()
+        self.datetime = published_at if published_at else datetime.datetime.now().isoformat()
         self.is_male = is_male
         self.show = True
         self.raw_text = raw_text if raw_text else text
@@ -99,6 +99,8 @@ def ytcm_check_audio_file():
 
 @app.route('/ytcm_generate_audio', methods=['POST'])
 def ytcm_generate_audio():
+
+    global ytcm_polly_service
     
     if not ytcm_data.ytcm_tts_enabled:
         err_log("Attempt to generate audio with TTS disabled")
@@ -106,6 +108,7 @@ def ytcm_generate_audio():
     
     if not ytcm_polly_service or not ytcm_polly_service.is_available():
         err_log("Attempt to generate audio with Polly service not available")
+        ytcm_polly_service = PollyService(YTCM_POLLY_CONFIG_FILE)
         return jsonify({'success': False, 'error': 'AWS Polly service not available'})
     
     try:
@@ -393,20 +396,40 @@ def ytcm_get_messages():
                     # Verify that the message has at least minimum words
                     words = msg['text'].split()
                     if ((not YTCM_IGNORE_CHANNEL_OWNER_MESSAGES) or (msg['author'] != ytcm_data.channel_name)) and (len(words) >= YTCM_MIN_MESSAGE_WORDS):
-                        # Verify if the message is a question via OpenAI
-                        is_question = (not YTCM_QUESTIONS_ONLY) or ytcm_openai_service.is_question(msg['text'])
-                        
-                        if is_question and ((not YTCM_APPLY_MODERATION) or ytcm_openai_service.is_appropriate(msg['text'])):
-                            msg_text = msg['text']
-                            if YTCM_APPLY_SPELLING_CORRECTION:
-                                # Correct spelling and improve text form while preserving special placeholders
-                                msg_text = ytcm_openai_service.correct_text(msg_text)
-                        
-                                info_log(f"New message approved: {msg['author']} - {msg['text']}")
-                        
-                            # Create a new custom message
-                            chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']), msg['text'])
 
+                        chat_msg = None
+
+                        # Check if message already exists in last_formatted_messages
+                        matching_messages = [
+                            formatted_msg for formatted_msg in ytcm_data.last_formatted_messages 
+                            if formatted_msg.get('author') == msg['author'] and 
+                            formatted_msg.get('datetime') == msg['published_at']
+                        ]
+                        
+                        if matching_messages and (len(matching_messages) > 0):
+                            found_msg = matching_messages[0]                            
+                            # Create a new custom message
+                            chat_msg = ytcm_ChatMessageCustom(msg['author'], found_msg.get('text'), (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or found_msg.get('is_male'), msg['text'], msg['published_at'])
+                            
+                            info_log(f"Yet processed message found: {chat_msg}")
+
+                        else:
+
+                            # Verify if the message is a question via OpenAI
+                            is_question = (not YTCM_QUESTIONS_ONLY) or ytcm_openai_service.is_question(msg['text'])
+                            
+                            if is_question and ((not YTCM_APPLY_MODERATION) or ytcm_openai_service.is_appropriate(msg['text'])):
+                                msg_text = msg['text']
+                                if YTCM_APPLY_SPELLING_CORRECTION:
+                                    # Correct spelling and improve text form while preserving special placeholders
+                                    msg_text = ytcm_openai_service.correct_text(msg_text)
+                            
+                                    info_log(f"New message approved: {msg['author']} - {msg['text']}")
+                            
+                                # Create a new custom message
+                                chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']), msg['text'], msg['published_at'])
+
+                        if chat_msg:
                             while ytcm_toggle_message_visibility_in_progress > 0:
                                 time.sleep(0.1)
 
@@ -432,7 +455,7 @@ def ytcm_get_messages():
                 'id': msg.id,
                 'author': msg.author,
                 'text': msg.text,
-                'datetime': msg.datetime.strftime('%Y-%m-%d %H:%M:%S'),
+                'datetime': msg.datetime,
                 'is_male': msg.is_male,
                 'show': msg.show and (not ytcm_hidden_messages_manager.is_hidden(msg.id)),
                 'live_title': None

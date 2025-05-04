@@ -42,9 +42,9 @@ class ytcm_ChatMessagesManager:
                         # Recreate the object with the same attributes
                         msg = type('ytcm_ChatMessageCustom', (), {})()
                         for key, value in msg_dict.items():
-                            if key == 'datetime':
+#                            if key == 'datetime':
                                 # Convert the datetime string to a datetime object
-                                value = datetime.datetime.fromisoformat(value)
+#                                value = datetime.datetime.fromisoformat(value)
                             setattr(msg, key, value)
                         self.messages.append(msg)            
             info_log(f"Loaded {len(self.messages)} messages from file {self.file_path}")
@@ -61,9 +61,9 @@ class ytcm_ChatMessagesManager:
             for msg in self.messages:
                 msg_dict = {}
                 for key, value in msg.__dict__.items():
-                    if key == 'datetime':
+#                    if key == 'datetime':
                         # Convert the datetime object to a string
-                        value = value.isoformat()
+#                        value = value.isoformat()
                     msg_dict[key] = value
                 serializable_messages.append(msg_dict)
             
