@@ -120,26 +120,26 @@ body {
     max-height: calc(100vh - 220px);
 }
 
-#message-list li {
+#message-list li, #message-list-full li {
     font-size: 1.25rem;
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
 
-#message-list li:nth-child(even) {
+#message-list li:nth-child(even), #message-list-full li:nth-child(even) {
     background-color: white;
 }
 
-#message-list li:nth-child(odd) {
+#message-list li:nth-child(odd), #message-list-full li:nth-child(odd) {
     background-color:rgb(240, 240, 240);
 }
 
-#message-list li:hover {
+#message-list li:hover, #message-list-full li:hover {
     background-color: aquamarine !important;
     cursor: pointer;
 }
 
-#message-list .btn {
+#message-list .btn, #message-list-full .btn {
     font-size: 1.5em;
     background-color: blanchedalmond;
 }
@@ -256,7 +256,7 @@ body {
         font-size: 15px;
     }
     
-    #message-list li {
+    #message-list li, #message-list-full li {
         font-size: 1.1rem;
     }
     
@@ -299,7 +299,7 @@ body {
         font-size: 1.5rem;
     }
     
-    #message-list li {
+    #message-list li, #message-list-full li {
         font-size: 1rem;
         padding: 0.5rem;
     }

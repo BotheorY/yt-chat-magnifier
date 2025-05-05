@@ -21,7 +21,7 @@ ytcm_toggle_message_visibility_in_progress = 0
 
 # Class to manage chat messages
 class ytcm_ChatMessageCustom:
-    def __init__(self, author, text, is_male=True, raw_text=None, published_at=None):
+    def __init__(self, author, text, is_male=True, raw_text=None, published_at=None, is_question:bool = False):
         self.author = author
         self.text = text
         self.datetime = published_at if published_at else datetime.datetime.now().isoformat()
@@ -29,6 +29,7 @@ class ytcm_ChatMessageCustom:
         self.show = True
         self.raw_text = raw_text if raw_text else text
         self.id = hashlib.sha256(f"{author}|{self.raw_text}".encode()).hexdigest()
+        self.is_question:bool = is_question
 
     def __str__(self):
         return f"[{self.author}] - {self.raw_text}"
@@ -316,6 +317,7 @@ def ytcm_get_messages():
         return jsonify({'success': True, 'messages': ytcm_data.last_formatted_messages})
 
     ytcm_data.ytcm_get_messages_in_progress = True
+
     try:
 
         try:
@@ -362,6 +364,7 @@ def ytcm_get_messages():
             if current_live_title:
                 current_live_title = {'live_title': current_live_title}
                 info_log(f"current_live_title modified: {current_live_title}")
+
             if clean_msg_list:
                 current_live_title['clean_msg_list'] = True
                 info_log("current_live_title.clean_msg_list modified: True")
@@ -409,7 +412,7 @@ def ytcm_get_messages():
                         if matching_messages and (len(matching_messages) > 0):
                             found_msg = matching_messages[0]                            
                             # Create a new custom message
-                            chat_msg = ytcm_ChatMessageCustom(msg['author'], found_msg.get('text'), (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or found_msg.get('is_male'), msg['text'], msg['published_at'])
+                            chat_msg = ytcm_ChatMessageCustom(msg['author'], found_msg.get('text'), (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or found_msg.get('is_male'), msg['text'], msg['published_at'], found_msg.get('is_question'))
                             
                             info_log(f"Yet processed message found: {chat_msg}")
 
@@ -418,16 +421,17 @@ def ytcm_get_messages():
                             # Verify if the message is a question via OpenAI
                             is_question = (not YTCM_QUESTIONS_ONLY) or ytcm_openai_service.is_question(msg['text'])
                             
-                            if is_question and ((not YTCM_APPLY_MODERATION) or ytcm_openai_service.is_appropriate(msg['text'])):
+                            if (not YTCM_APPLY_MODERATION) or ytcm_openai_service.is_appropriate(msg['text']):
+                            
+                                info_log(f"New message approved: {msg['author']} - {msg['text']}")
+
                                 msg_text = msg['text']
                                 if YTCM_APPLY_SPELLING_CORRECTION:
                                     # Correct spelling and improve text form while preserving special placeholders
                                     msg_text = ytcm_openai_service.correct_text(msg_text)
                             
-                                    info_log(f"New message approved: {msg['author']} - {msg['text']}")
-                            
                                 # Create a new custom message
-                                chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']), msg['text'], msg['published_at'])
+                                chat_msg = ytcm_ChatMessageCustom(msg['author'], msg_text, (not YTCM_RETRIEVE_MSG_AUTHOR_GENDER) or ytcm_openai_service.is_male_username(msg['author']), msg['text'], msg['published_at'], is_question)
 
                         if chat_msg:
                             while ytcm_toggle_message_visibility_in_progress > 0:
@@ -458,6 +462,7 @@ def ytcm_get_messages():
                 'datetime': msg.datetime,
                 'is_male': msg.is_male,
                 'show': msg.show and (not ytcm_hidden_messages_manager.is_hidden(msg.id)),
+                'is_question': bool(msg.is_question),
                 'live_title': None
             } for msg in ytcm_chat_messages_manager.get_messages()]
 

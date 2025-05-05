@@ -1,4 +1,5 @@
 let lastNMessages = 0;
+let lastNMessagesFull = 0;
 let preventSingleClick = false;
 let pollingInterval;
 let apiQuotaErrMsg = false;
@@ -40,7 +41,7 @@ $(document).ready(function() {
     // Questions button click handler
     $('#questions-btn').click(function() {
         // Toggle state
-        questionsOnly = questionsOnly === 1 ? 0 : 1;
+        questionsOnly = questionsOnly === 0 ? 1 : 0;
         
         // Update button appearance
         updateQuestionsButtonState();
@@ -54,10 +55,14 @@ $(document).ready(function() {
         const questionsBtn = $('#questions-btn');
         questionsBtn.attr('data-questions-only', questionsOnly);
         
-        if (questionsOnly === 1) {
+        if (questionsOnly !== 0) {
             questionsBtn.addClass('questions-btn-on').removeClass('questions-btn-off');
+            $('#message-list').show();
+            $('#message-list-full').hide();
         } else {
             questionsBtn.addClass('questions-btn-off').removeClass('questions-btn-on');
+            $('#message-list-full').show();
+            $('#message-list').hide();
         }
     }
 
@@ -207,6 +212,7 @@ $(document).ready(function() {
     function updateMessageList(messages) {
 
         const messageList = $('#message-list');
+        const messageListFull = $('#message-list-full');
         let messageListCleared = false;
         
         // Add messages
@@ -216,24 +222,35 @@ $(document).ready(function() {
                 updateLiveTitle(msg.live_title);
                 if (msg.clean_msg_list) {
                     messageList.empty();
+                    messageListFull.empty();
                     messageListCleared = true;
                 }
             } else {            
                 if (!messageListCleared) {
                     messageList.empty();
+                    messageListFull.empty();
                     messageListCleared = true;
                 }
                 if (msg.show && (!(msg.show == 'false')) && (!(msg.show == 'False'))) {
                     const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
+                    const listItemFull = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
                     // Set the message ID as a data attribute
                     listItem.attr('data-id', msg.id);
                     listItem.attr('data-ismale', msg.is_male);
                     listItem.attr('data-show', msg.show);
                     listItem.attr('data-text', msg.text);
                     listItem.attr('data-author', msg.author);
+                    listItem.attr('data-isquestion', msg.is_question);
+                    listItemFull.attr('data-id', msg.id);
+                    listItemFull.attr('data-ismale', msg.is_male);
+                    listItemFull.attr('data-show', msg.show);
+                    listItemFull.attr('data-text', msg.text);
+                    listItemFull.attr('data-author', msg.author);
+                    listItemFull.attr('data-isquestion', msg.is_question);
                     
                     // Create message text container
                     const messageText = $('<div></div>');
+                    const messageTextFull = $('<div></div>');
                     let msgText = msg.text;
                     if (forceMsgUppercase) {
                         msgText = msgText.toUpperCase();
@@ -243,10 +260,12 @@ $(document).ready(function() {
                     if (forceMsgUppercase) {
                         msgAuthor = msgAuthor.toUpperCase();
                     }
-                    messageText.html(`[<strong>${msgAuthor}</strong>] - ${parsedText}`);
+                    messageText.html(`<span style="font-family: Verdana, Open Sans, Inter, sans-serif, monospace, system-ui;"><strong>[${msgAuthor}] - ${parsedText}</strong></span>`);
+                    messageTextFull.html(`<span style="font-family: Verdana, Open Sans, Inter, sans-serif, monospace, system-ui;"><strong>[${msgAuthor}] - ${parsedText}</strong></span>`);
                     
                     // Create toggle button
                     const toggleBtn = $('<button class="btn btn-sm ms-2"></button>');
+                    const toggleBtnFull = $('<button class="btn btn-sm ms-2"></button>');
                     toggleBtn.addClass(msg.show ? 'btn-outline-danger' : 'btn-outline-success');
                     toggleBtn.html(msg.show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>');
                     toggleBtn.attr('title', msg.show ? 'Hide message' : 'Show message');
@@ -259,16 +278,40 @@ $(document).ready(function() {
                         }
                         return false; // Additional security to stop propagation
                     });
-                                    
+
+                    toggleBtnFull.addClass(msg.show ? 'btn-outline-danger' : 'btn-outline-success');
+                    toggleBtnFull.html(msg.show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>');
+                    toggleBtnFull.attr('title', msg.show ? 'Hide message' : 'Show message');
+                    // Make sure the click event doesn't propagate to the parent element in any case
+                    toggleBtnFull.on('click mousedown mouseup', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation(); // Prevent triggering the list item click
+                        if (e.type === 'click') {
+                            toggleMessageVisibility(msg.id, !msg.show);
+                        }
+                        return false; // Additional security to stop propagation
+                    });
+                    
+
                     // Add elements to list item
                     listItem.append(messageText);
                     listItem.append(toggleBtn);
+                    listItemFull.append(messageTextFull);
+                    listItemFull.append(toggleBtnFull);
 
                     // Variable to track click timing
                     let clickTimer = null;
                     
                     // Add click event to show overlay (single click)
                     listItem.click(function() {                   
+                        // Use a timer to differentiate between single and double click
+                        const $this = $(this);
+                        clickTimer = setTimeout(function() {
+                            clickTimer = null;
+                            showMessageOverlay(msg.author, msg.text, $this);
+                        }, 300); // 300ms delay to wait for potential double click
+                    });
+                    listItemFull.click(function() {                   
                         // Use a timer to differentiate between single and double click
                         const $this = $(this);
                         clickTimer = setTimeout(function() {
@@ -319,18 +362,76 @@ $(document).ready(function() {
                             }, 1500);
                         });
                     });
-                    messageList.append(listItem);
+
+                    listItemFull.dblclick(function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Set flag to prevent single click
+                        preventSingleClick = true;
+                        
+                        // Clear the single click timer if it exists
+                        if (clickTimer) {
+                            clearTimeout(clickTimer);
+                            clickTimer = null;
+                        }
+                        
+                        // Reset the prevention flag after a short delay
+                        /* setTimeout(function() {
+                            preventSingleClick = false;
+                        }, 500); */
+                        
+                        // Add flash animation class
+                        listItemFull.addClass('message-flash');
+                        
+                        // Copy text to clipboard
+                        const textToCopy = `[${msg.author}] - ${msg.text}`;
+                        navigator.clipboard.writeText(textToCopy).then(function() {
+                            // Show temporary visual feedback
+                            const feedback = $('<span class="copy-feedback copy-success"><i class="bi bi-check"><i> Copied!</span>');
+                            listItemFull.append(feedback);
+                            
+                            // Remove flash class and feedback after animation completes
+                            setTimeout(function() {
+                                listItemFull.removeClass('message-flash');
+                                feedback.remove();
+                            }, 1500);
+                        }).catch(function(err) {
+                            console.log('Error during copy: ', err);
+                            listItemFull.append('<span class="copy-feedback copy-error"><i class="bi bi-exclamation-triangle"></i> Error during copy</span>');
+                            setTimeout(function() {
+                                listItemFull.removeClass('message-flash');
+                            }, 1500);
+                        });
+                    });
+
+                    if (msg.is_question && (!(msg.is_question == 'false')) && (!(msg.is_question == 'False'))) {
+                        messageList.append(listItem);
+                    }
+                    messageListFull.append(listItemFull);
                 }
             }
         });
         
-        let nMessages = messageList.children().length;
+        updateQuestionsButtonState();
+
+        if (questionsOnly !== 0) {
+            let nMessages = messageList.children().length;
             if (lastNMessages < nMessages) {
-            // Automatically scroll to bottom
-            const messageContainer = $('.message-list');
-            messageContainer.scrollTop(messageContainer[0].scrollHeight);
+                // Automatically scroll to bottom
+                const messageContainer = $('.message-list');
+                messageContainer.scrollTop(messageContainer[0].scrollHeight);
+            }
+            lastNMessages = nMessages;
+        } else {
+            let nMessages = messageListFull.children().length;
+            if (lastNMessagesFull < nMessages) {
+                // Automatically scroll to bottom
+                const messageContainer = $('.message-list');
+                messageContainer.scrollTop(messageContainer[0].scrollHeight);
+            }
+            lastNMessagesFull = nMessages;
         }
-        lastNMessages = nMessages;
     }
     
     // Function to toggle message visibility
@@ -339,6 +440,7 @@ $(document).ready(function() {
         if (!showValue) {
             // Find and remove the element with the corresponding ID
             $(`#message-list li[data-id="${messageId}"]`).remove();
+            $(`#message-list-full li[data-id="${messageId}"]`).remove();
         }
         
         // Send the request to the server anyway to update the status

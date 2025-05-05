@@ -50,8 +50,11 @@
                                         <h4 style="white-space: nowrap; margin-bottom: 0;">Chat Messages <span id="live-title" style="font-size: .7em;" class="fst-italic">({{ live_title }})</span></h4>
                                     </div>
                                     <div class="message-list p-3 border rounded">
-                                        <ul id="message-list" class="list-group list-group-flush">
-                                            <!-- Messages will be added here dynamically -->
+                                        <ul style="display: none;" id="message-list" class="list-group list-group-flush">
+                                            <!-- Question messages will be added here dynamically -->
+                                        </ul>
+                                        <ul style="display: none;" id="message-list-full" class="list-group list-group-flush">
+                                            <!-- All messages will be added here dynamically -->
                                         </ul>
                                     </div>
                                 </div>
